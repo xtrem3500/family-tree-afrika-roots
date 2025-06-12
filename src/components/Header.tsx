@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,6 +21,7 @@ const Header: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user, signOut, deleteAllData } = useAuth();
+  const navigate = useNavigate();
 
   const handleDeleteAll = async () => {
     if (deleteCode === '1432') {
@@ -28,6 +29,7 @@ const Header: React.FC = () => {
         await deleteAllData();
         setIsDeleteDialogOpen(false);
         setDeleteCode('');
+        navigate('/');
       } catch (error) {
         console.error('Delete all error:', error);
       }
@@ -37,6 +39,15 @@ const Header: React.FC = () => {
         description: "Le code de sécurité saisi est incorrect.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -124,7 +135,10 @@ const Header: React.FC = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-red-600">
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Se déconnecter</span>
                 </DropdownMenuItem>

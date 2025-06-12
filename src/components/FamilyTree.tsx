@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Profile } from '@/types/profile';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FamilyMember {
   id: string;
@@ -159,56 +161,25 @@ const FamilyTreeNode: React.FC<{ member: FamilyMember; level: number }> = ({ mem
 const FamilyTree: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
+  const [selectedMember, setSelectedMember] = useState<Profile | null>(null);
   const [currentGeneration, setCurrentGeneration] = useState(0);
   const [generations, setGenerations] = useState<FamilyMember[][]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: familyMembers, isLoading } = useQuery({
-    queryKey: ['familyMembers'],
+  const { data: profiles, isLoading, error: profilesError } = useQuery({
+    queryKey: ['profiles'],
     queryFn: async () => {
-      try {
-        // 1. Récupérer tous les profils avec les colonnes de base
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select(`
-            id,
-            first_name,
-            last_name,
-            photo_url,
-            role,
-            birth_date,
-            birth_place,
-            current_location,
-            title,
-            created_at
-          `)
-          .order('created_at', { ascending: true });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, photo_url, role, birth_date, birth_place, current_location, title, created_at')
+        .order('created_at', { ascending: true });
 
-        if (profilesError) {
-          console.error('Erreur lors de la récupération des profils:', profilesError);
-          throw profilesError;
-        }
-
-        if (!profiles) {
-          throw new Error('Aucune donnée trouvée');
-        }
-
-        // 2. Transformer les profils en membres de famille
-        const familyMembers = profiles.map(profile => ({
-          ...profile,
-          generation: profile.role === 'patriarch' ? 0 : 1,
-          father: null,
-          mother: null,
-          spouse: null,
-          children: []
-        }));
-
-        return familyMembers;
-      } catch (error: any) {
-        console.error('Erreur inattendue:', error);
+      if (error) {
+        console.error('Erreur lors de la récupération des profils:', error);
         throw error;
       }
+
+      return data as Profile[];
     }
   });
 
@@ -247,17 +218,17 @@ const FamilyTree: React.FC = () => {
   };
 
   useEffect(() => {
-    if (familyMembers) {
+    if (profiles) {
       try {
         // Organiser les membres par génération
         const organizedGenerations: FamilyMember[][] = [];
 
-        familyMembers.forEach(member => {
-          const generation = member.generation || 0;
+        profiles.forEach(profile => {
+          const generation = profile.role === 'patriarch' ? 0 : 1;
           if (!organizedGenerations[generation]) {
             organizedGenerations[generation] = [];
           }
-          organizedGenerations[generation].push(member);
+          organizedGenerations[generation].push(profile as FamilyMember);
         });
 
         setGenerations(organizedGenerations);
@@ -267,35 +238,25 @@ const FamilyTree: React.FC = () => {
         setError(`Erreur lors de l'organisation des données: ${error.message}`);
       }
     }
-  }, [familyMembers]);
+  }, [profiles]);
 
   const handleMemberClick = (member: FamilyMember) => {
-    setSelectedMember(member);
+    setSelectedMember(member as Profile);
     setCurrentGeneration(member.generation);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-baobab-600"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-baobab-600" />
       </div>
     );
   }
 
-  if (error) {
+  if (profilesError) {
     return (
-      <div className="text-center p-8 space-y-4">
-        <div className="text-red-600 font-medium">{error}</div>
-        <p className="text-sm text-gray-600">
-          Si le problème persiste, veuillez rafraîchir la page ou contacter le support.
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => window.location.reload()}
-          className="mt-4"
-        >
-          Rafraîchir la page
-        </Button>
+      <div className="text-center text-red-600 p-4">
+        Une erreur est survenue lors du chargement de l'arbre familial
       </div>
     );
   }
@@ -343,71 +304,115 @@ const FamilyTree: React.FC = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {generations[currentGeneration]?.map((member) => (
-          <MemberCard
-            key={member.id}
-            member={member}
-            onClick={handleMemberClick}
-          />
-        ))}
-      </div>
-
-      {selectedMember && (
-        <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Détails du membre</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedMember.photo_url} alt={`${selectedMember.first_name} ${selectedMember.last_name}`} />
-                  <AvatarFallback className="bg-gradient-to-br from-whatsapp-400 to-emerald-500 text-white text-lg">
-                    {selectedMember.first_name.charAt(0)}{selectedMember.last_name.charAt(0)}
+      <ScrollArea className="h-[600px] rounded-lg border p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {generations[currentGeneration]?.map((member) => (
+            <Card
+              key={member.id}
+              className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                selectedMember?.id === member.id ? 'ring-2 ring-baobab-500' : ''
+              }`}
+              onClick={() => handleMemberClick(member)}
+            >
+              <div className="flex items-start space-x-4">
+                <Avatar className="h-16 w-16 border-2 border-baobab-200">
+                  <AvatarImage src={member.photo_url} alt={`${member.first_name} ${member.last_name}`} />
+                  <AvatarFallback className="bg-gradient-to-br from-baobab-400 to-baobab-600 text-white">
+                    {member.first_name.charAt(0)}{member.last_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="text-lg font-semibold">{selectedMember.first_name} {selectedMember.last_name}</h3>
-                  <p className="text-sm text-gray-500">{selectedMember.title}</p>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">
+                      {member.first_name} {member.last_name}
+                    </h3>
+                    <Badge variant={member.role === 'patriarch' ? 'default' : 'secondary'}>
+                      {member.role === 'patriarch' ? 'Patriarche' : 'Membre'}
+                    </Badge>
+                  </div>
+                  {member.title && (
+                    <p className="text-sm text-gray-600">{member.title}</p>
+                  )}
+                  {member.birth_date && (
+                    <p className="text-sm text-gray-600">
+                      Né(e) le {new Date(member.birth_date).toLocaleDateString('fr-FR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                      {member.birth_place && ` à ${member.birth_place}`}
+                    </p>
+                  )}
+                  {member.current_location && (
+                    <p className="text-sm text-gray-600">
+                      Vit à {member.current_location}
+                    </p>
+                  )}
                 </div>
               </div>
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
 
-              <div className="grid grid-cols-2 gap-4">
-                {selectedMember.father && (
-                  <div>
-                    <p className="text-sm text-gray-500">Père</p>
-                    <p className="font-medium">{selectedMember.father.first_name} {selectedMember.father.last_name}</p>
-                  </div>
-                )}
-                {selectedMember.mother && (
-                  <div>
-                    <p className="text-sm text-gray-500">Mère</p>
-                    <p className="font-medium">{selectedMember.mother.first_name} {selectedMember.mother.last_name}</p>
-                  </div>
-                )}
-                {selectedMember.birth_date && (
-                  <div>
-                    <p className="text-sm text-gray-500">Date de naissance</p>
-                    <p className="font-medium">{selectedMember.birth_date}</p>
-                  </div>
-                )}
-                {selectedMember.birth_place && (
-                  <div>
-                    <p className="text-sm text-gray-500">Lieu de naissance</p>
-                    <p className="font-medium">{selectedMember.birth_place}</p>
-                  </div>
-                )}
-                {selectedMember.current_location && (
-                  <div>
-                    <p className="text-sm text-gray-500">Localisation actuelle</p>
-                    <p className="font-medium">{selectedMember.current_location}</p>
-                  </div>
-                )}
+      {selectedMember && (
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-20 w-20 border-2 border-baobab-200">
+                <AvatarImage src={selectedMember.photo_url} alt={`${selectedMember.first_name} ${selectedMember.last_name}`} />
+                <AvatarFallback className="bg-gradient-to-br from-baobab-400 to-baobab-600 text-white text-2xl">
+                  {selectedMember.first_name.charAt(0)}{selectedMember.last_name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {selectedMember.first_name} {selectedMember.last_name}
+                </h2>
+                <Badge variant={selectedMember.role === 'patriarch' ? 'default' : 'secondary'} className="mt-2">
+                  {selectedMember.role === 'patriarch' ? 'Patriarche' : 'Membre'}
+                </Badge>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedMember.title && (
+                <div>
+                  <h3 className="font-semibold text-gray-700">Titre</h3>
+                  <p>{selectedMember.title}</p>
+                </div>
+              )}
+              {selectedMember.birth_date && (
+                <div>
+                  <h3 className="font-semibold text-gray-700">Date de naissance</h3>
+                  <p>{new Date(selectedMember.birth_date).toLocaleDateString('fr-FR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}</p>
+                </div>
+              )}
+              {selectedMember.birth_place && (
+                <div>
+                  <h3 className="font-semibold text-gray-700">Lieu de naissance</h3>
+                  <p>{selectedMember.birth_place}</p>
+                </div>
+              )}
+              {selectedMember.current_location && (
+                <div>
+                  <h3 className="font-semibold text-gray-700">Lieu de résidence</h3>
+                  <p>{selectedMember.current_location}</p>
+                </div>
+              )}
+              {selectedMember.country && (
+                <div>
+                  <h3 className="font-semibold text-gray-700">Pays</h3>
+                  <p>{selectedMember.country}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
       )}
 
       {user && (
