@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import FamilyTree from '@/components/FamilyTree';
 import RegistrationStep1 from '@/components/RegistrationStep1';
 import RegistrationStep2Creator from '@/components/RegistrationStep2Creator';
@@ -71,55 +72,92 @@ const Index = () => {
 
   if (appState === 'register-step1') {
     return (
-      <RegistrationStep1 
-        onNext={handleRegistrationStep1Complete} 
-        onShowLogin={handleShowLogin}
-      />
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-20">
+          <RegistrationStep1 
+            onNext={handleRegistrationStep1Complete} 
+            onShowLogin={handleShowLogin}
+          />
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   if (appState === 'register-step2-creator') {
     return (
-      <RegistrationStep2Creator 
-        userData={userData}
-        onComplete={handleRegistrationComplete}
-        onBack={handleBack}
-      />
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-20">
+          <RegistrationStep2Creator 
+            userData={userData}
+            onComplete={handleRegistrationComplete}
+            onBack={handleBack}
+          />
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   if (appState === 'register-step2-member') {
     return (
-      <RegistrationStep2Member 
-        userData={userData}
-        onComplete={handleRegistrationComplete}
-        onBack={handleBack}
-      />
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-20">
+          <RegistrationStep2Member 
+            userData={userData}
+            onComplete={handleRegistrationComplete}
+            onBack={handleBack}
+          />
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-whatsapp-50 via-emerald-50 to-teal-50">
       <Header />
-      <main className="pt-20 container mx-auto p-4">
-        <div className="space-y-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              Votre Arbre Familial
-            </h2>
-            <p className="text-muted-foreground">
-              Explorez et découvrez les liens qui unissent votre famille
-            </p>
-          </div>
-          
-          <FamilyTree />
-          
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Naviguez dans l'arbre en cliquant sur les membres pour voir leurs descendants.</p>
-            <p>Utilisez le scroll pour explorer toute votre famille.</p>
+      
+      <main className="flex-1 pt-24 pb-8">
+        <div className="container mx-auto p-4">
+          <div className="space-y-8">
+            {/* Hero Section */}
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center space-x-3 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-whatsapp-400 to-emerald-500 rounded-3xl flex items-center justify-center shadow-2xl glow">
+                  <span className="text-white text-3xl">🌳</span>
+                </div>
+                <div>
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-whatsapp-600 to-emerald-600 bg-clip-text text-transparent">
+                    Votre Arbre Familial
+                  </h2>
+                </div>
+              </div>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">
+                🌍 Explorez et découvrez les liens qui unissent votre famille africaine à travers les générations
+              </p>
+            </div>
+            
+            <FamilyTree />
+            
+            <div className="text-center bg-gradient-to-r from-whatsapp-100 to-emerald-100 rounded-2xl p-6 shadow-lg border border-whatsapp-200">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700 font-medium">
+                  💡 <strong>Navigation :</strong> Cliquez sur les membres pour voir leurs descendants
+                </p>
+                <p className="text-sm text-gray-600">
+                  📱 Utilisez le scroll pour explorer toute votre famille
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

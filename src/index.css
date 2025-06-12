@@ -3,87 +3,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/* African Family Tree Design System */
+/* Modern African Family Tree Design System */
 
 @layer base {
   :root {
-    --background: 28 20% 97%;
-    --foreground: 28 20% 7%;
+    --background: 220 14% 96%;
+    --foreground: 224 71% 4%;
 
-    --card: 28 15% 98%;
-    --card-foreground: 28 20% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
 
-    --popover: 28 15% 98%;
-    --popover-foreground: 28 20% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
 
-    --primary: 28 70% 45%;
-    --primary-foreground: 28 10% 98%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 100% 97%;
 
-    --secondary: 28 15% 92%;
-    --secondary-foreground: 28 20% 15%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
 
-    --muted: 28 15% 94%;
-    --muted-foreground: 28 15% 45%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 28 25% 88%;
-    --accent-foreground: 28 20% 15%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 28 15% 90%;
-    --input: 28 15% 90%;
-    --ring: 28 70% 45%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 28 15% 98%;
-    --sidebar-foreground: 28 20% 15%;
-    --sidebar-primary: 28 70% 45%;
-    --sidebar-primary-foreground: 28 10% 98%;
-    --sidebar-accent: 28 15% 92%;
-    --sidebar-accent-foreground: 28 20% 15%;
-    --sidebar-border: 28 15% 90%;
-    --sidebar-ring: 28 70% 45%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5% 34%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 355 100% 97%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 9% 46%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 142 76% 36%;
   }
 
   .dark {
-    --background: 28 20% 8%;
-    --foreground: 28 15% 92%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 28 20% 10%;
-    --card-foreground: 28 15% 90%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 28 20% 10%;
-    --popover-foreground: 28 15% 90%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 28 70% 55%;
-    --primary-foreground: 28 20% 8%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 355 100% 97%;
 
-    --secondary: 28 20% 15%;
-    --secondary-foreground: 28 15% 85%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 28 20% 12%;
-    --muted-foreground: 28 15% 65%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 217 11% 65%;
 
-    --accent: 28 20% 18%;
-    --accent-foreground: 28 15% 85%;
+    --accent: 215 28% 17%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 28 20% 18%;
-    --input: 28 20% 18%;
-    --ring: 28 70% 55%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 142 76% 36%;
 
-    --sidebar-background: 28 20% 10%;
-    --sidebar-foreground: 28 15% 85%;
-    --sidebar-primary: 28 70% 55%;
-    --sidebar-primary-foreground: 28 20% 8%;
-    --sidebar-accent: 28 20% 15%;
-    --sidebar-accent-foreground: 28 15% 85%;
-    --sidebar-border: 28 20% 18%;
-    --sidebar-ring: 28 70% 55%;
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 217 11% 65%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 355 100% 97%;
+    --sidebar-accent: 215 28% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 28% 17%;
+    --sidebar-ring: 142 76% 36%;
   }
 }
 
@@ -93,48 +93,92 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-whatsapp-50 via-emerald-50 to-teal-50 text-foreground min-h-screen;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Custom scrollbar styling */
+/* Modern scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-emerald-100/50;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-primary/20 rounded-full;
+  @apply bg-whatsapp-400/60 rounded-full;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary/30;
+  @apply bg-whatsapp-500/80;
 }
 
 /* WhatsApp-inspired message bubbles */
 .message-bubble {
-  @apply bg-whatsapp-500 text-white rounded-2xl rounded-br-md px-4 py-2 max-w-xs ml-auto shadow-sm;
+  @apply bg-whatsapp-500 text-white rounded-2xl rounded-br-md px-4 py-2 max-w-xs ml-auto shadow-lg;
 }
 
 .message-bubble-received {
-  @apply bg-card text-card-foreground rounded-2xl rounded-bl-md px-4 py-2 max-w-xs mr-auto shadow-sm;
+  @apply bg-white text-gray-800 rounded-2xl rounded-bl-md px-4 py-2 max-w-xs mr-auto shadow-lg border border-gray-200;
 }
 
-/* Tree node styling */
+/* Modern tree node styling */
 .tree-node {
-  @apply bg-gradient-to-br from-earth-100 to-earth-200 border-2 border-earth-300 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
+  @apply bg-gradient-to-br from-white via-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm;
 }
 
 .tree-node.patriarch {
-  @apply from-baobab-200 to-baobab-300 border-baobab-400 ring-4 ring-baobab-400/20;
+  @apply from-whatsapp-100 via-emerald-100 to-gold-100 border-whatsapp-400 ring-4 ring-whatsapp-400/30 shadow-whatsapp-200/50;
+}
+
+/* Glass morphism effect */
+.glass {
+  @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl;
+}
+
+/* Modern gradient backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+}
+
+.gradient-bg-alt {
+  background: linear-gradient(135deg, #ff8a4c 0%, #ff5722 50%, #f59e0b 100%);
 }
 
 /* Smooth transitions for all interactive elements */
 .interactive {
-  @apply transition-all duration-200 ease-in-out;
+  @apply transition-all duration-300 ease-in-out transform hover:scale-[1.02];
+}
+
+/* Modern button styles */
+.btn-modern {
+  @apply bg-gradient-to-r from-whatsapp-500 to-emerald-500 hover:from-whatsapp-600 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02];
+}
+
+.btn-secondary {
+  @apply bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300;
+}
+
+/* Floating animation */
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Glowing effect */
+.glow {
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.3);
+}
+
+.glow:hover {
+  box-shadow: 0 0 30px rgba(37, 211, 102, 0.5);
 }
