@@ -4,45 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Fonction pour uploader une image
-const uploadImage = async (file: File, userId: string): Promise<string> => {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { error: uploadError, data } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    throw new Error('Erreur lors du téléchargement de l\'image');
-  }
-};
-
-interface RegistrationStep1Props {
-  onNext: (data: any) => void;
-  onShowLogin: () => void;
+interface FirstUserRegistrationProps {
+  onComplete: (data: any) => void;
 }
 
-const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLogin }) => {
+export const FirstUserRegistration: React.FC<FirstUserRegistrationProps> = ({ onComplete }) => {
   const [formData, setFormData] = useState({
     photoUrl: '',
     firstName: '',
@@ -67,7 +39,6 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // 1. Créer l'utilisateur dans auth
       const { user } = await signUp(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -77,53 +48,25 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
 
       if (!user) throw new Error('No user data returned');
 
-      // 2. Si la photo est en base64, l'uploader vers Supabase
-      let finalPhotoUrl = formData.photoUrl;
-      if (formData.photoUrl.startsWith('data:image')) {
-        const response = await fetch(formData.photoUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
-        finalPhotoUrl = await uploadImage(file, user.id);
-      }
+      // Créer automatiquement un arbre familial pour le premier utilisateur
+      const { error: treeError } = await supabase
+        .from('family_trees')
+        .insert([
+          {
+            name: `${formData.firstName} ${formData.lastName}'s Family Tree`,
+            created_by: user.id,
+            is_public: false
+          }
+        ]);
 
-      // 3. Mettre à jour le profil avec toutes les informations
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          photo_url: finalPhotoUrl,
-          country: formData.country,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      if (treeError) throw new Error('Erreur lors de la création de l\'arbre familial');
 
-      if (updateError) throw updateError;
-
-      // 4. Mettre à jour les métadonnées de l'utilisateur
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          photo_url: finalPhotoUrl,
-          display_name: `${formData.firstName} ${formData.lastName}`
-        }
+      toast({
+        title: "Inscription réussie",
+        description: "Votre compte a été créé avec succès. Vous êtes maintenant le premier membre de votre arbre familial.",
       });
 
-      if (metadataError) throw metadataError;
-
-      onNext({
-        id: user.id,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        photoUrl: finalPhotoUrl,
-        country: formData.country,
-        role: 'member'
-      });
+      onComplete(user);
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
@@ -132,11 +75,6 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
         variant: "destructive",
       });
     }
-  };
-
-  const handleFacebookLogin = () => {
-    // TODO: Implement Facebook OAuth
-    console.log('Facebook login clicked');
   };
 
   const getUserInitials = () => {
@@ -152,23 +90,13 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
           <div className="w-16 h-16 bg-gradient-to-br from-baobab-400 to-baobab-600 rounded-full mx-auto flex items-center justify-center mb-4">
             <span className="text-white text-2xl">🌳</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-baobab-800">Familiale Tree</CardTitle>
-          <p className="text-sm text-muted-foreground">par Thierry Gogo</p>
+          <CardTitle className="text-2xl font-bold text-baobab-800">Bienvenue sur Familiale Tree</CardTitle>
           <p className="text-sm text-center text-muted-foreground">
-            Rejoignez votre famille sur Familiale Tree
+            Vous êtes le premier membre de votre arbre familial
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <Button
-            onClick={handleFacebookLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Continuer avec Facebook
-          </Button>
-
-          <Separator className="my-4" />
-
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-center">
               <ProfilePhotoUpload
@@ -260,23 +188,12 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
                   Création du compte...
                 </div>
               ) : (
-                "Continuer l'inscription"
+                "Créer mon compte"
               )}
             </Button>
           </form>
-
-          <div className="text-center">
-            <button
-              onClick={onShowLogin}
-              className="text-sm text-primary hover:underline"
-            >
-              Déjà inscrit ? Se connecter
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
   );
 };
-
-export default RegistrationStep1;

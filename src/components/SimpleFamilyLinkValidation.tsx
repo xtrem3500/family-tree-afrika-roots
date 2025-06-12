@@ -3,55 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/use-auth';
-import { toast } from '@/components/ui/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface RegistrationStep2CreatorProps {
-  userData: any;
+interface SimpleFamilyLinkValidationProps {
   onComplete: (data: any) => void;
   onBack: () => void;
 }
 
-const RegistrationStep2Creator: React.FC<RegistrationStep2CreatorProps> = ({
-  userData,
-  onComplete,
-  onBack
-}) => {
+export const SimpleFamilyLinkValidation: React.FC<SimpleFamilyLinkValidationProps> = ({ onComplete, onBack }) => {
   const [formData, setFormData] = useState({
-    birthDate: '',
+    birthDate: null as Date | null,
     birthPlace: '',
     currentLocation: '',
-    title: ''
+    occupation: ''
   });
-  const { updateProfile, isLoading } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await updateProfile({
-        birth_date: formData.birthDate,
-        birth_place: formData.birthPlace,
-        current_location: formData.currentLocation,
-        title: formData.title,
-        role: 'patriarch',
-        is_patriarch: true
-      });
-
-      onComplete({
-        ...userData,
-        ...formData,
-        role: 'patriarch',
-        is_patriarch: true
-      });
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      toast({
-        title: "Erreur d'inscription",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    onComplete(formData);
   };
 
   return (
@@ -69,14 +43,33 @@ const RegistrationStep2Creator: React.FC<RegistrationStep2CreatorProps> = ({
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="birthDate">Date de naissance</Label>
-              <Input
-                id="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                required
-              />
+              <Label>Date de naissance</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.birthDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.birthDate ? (
+                      format(formData.birthDate, "dd/MM/yyyy", { locale: fr })
+                    ) : (
+                      <span>jj/mm/aaaa</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.birthDate || undefined}
+                    onSelect={(date) => setFormData({ ...formData, birthDate: date })}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
@@ -102,12 +95,12 @@ const RegistrationStep2Creator: React.FC<RegistrationStep2CreatorProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Titre/Fonction</Label>
+              <Label htmlFor="occupation">Titre/Fonction</Label>
               <Input
-                id="title"
+                id="occupation"
                 placeholder="ex: Étudiant, Ingénieur..."
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                value={formData.occupation}
+                onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
                 required
               />
             </div>
@@ -124,16 +117,8 @@ const RegistrationStep2Creator: React.FC<RegistrationStep2CreatorProps> = ({
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white"
-                disabled={isLoading}
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Soumission...
-                  </div>
-                ) : (
-                  "Soumettre la demande"
-                )}
+                Soumettre la demande
               </Button>
             </div>
           </form>
@@ -142,5 +127,3 @@ const RegistrationStep2Creator: React.FC<RegistrationStep2CreatorProps> = ({
     </div>
   );
 };
-
-export default RegistrationStep2Creator;
