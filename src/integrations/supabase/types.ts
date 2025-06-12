@@ -9,7 +9,273 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      family_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          tree_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          tree_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          tree_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_tree_id_fkey"
+            columns: ["tree_id"]
+            isOneToOne: false
+            referencedRelation: "family_trees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_trees: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          patriarch_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          patriarch_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          patriarch_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_trees_patriarch_id_fkey"
+            columns: ["patriarch_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      join_requests: {
+        Row: {
+          created_at: string | null
+          father_name: string | null
+          id: string
+          message: string | null
+          mother_name: string | null
+          proposed_related_member_id: string | null
+          proposed_relationship_type:
+            | Database["public"]["Enums"]["relationship_type"]
+            | null
+          related_member_search: string | null
+          requester_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["request_status"] | null
+          tree_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          father_name?: string | null
+          id?: string
+          message?: string | null
+          mother_name?: string | null
+          proposed_related_member_id?: string | null
+          proposed_relationship_type?:
+            | Database["public"]["Enums"]["relationship_type"]
+            | null
+          related_member_search?: string | null
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          tree_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          father_name?: string | null
+          id?: string
+          message?: string | null
+          mother_name?: string | null
+          proposed_related_member_id?: string | null
+          proposed_relationship_type?:
+            | Database["public"]["Enums"]["relationship_type"]
+            | null
+          related_member_search?: string | null
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          tree_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "join_requests_proposed_related_member_id_fkey"
+            columns: ["proposed_related_member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "join_requests_tree_id_fkey"
+            columns: ["tree_id"]
+            isOneToOne: false
+            referencedRelation: "family_trees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          birth_date: string | null
+          birth_place: string | null
+          country: string | null
+          created_at: string | null
+          current_location: string | null
+          email: string
+          first_name: string
+          id: string
+          is_patriarch: boolean | null
+          last_name: string
+          phone: string | null
+          photo_url: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birth_date?: string | null
+          birth_place?: string | null
+          country?: string | null
+          created_at?: string | null
+          current_location?: string | null
+          email: string
+          first_name: string
+          id: string
+          is_patriarch?: boolean | null
+          last_name: string
+          phone?: string | null
+          photo_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birth_date?: string | null
+          birth_place?: string | null
+          country?: string | null
+          created_at?: string | null
+          current_location?: string | null
+          email?: string
+          first_name?: string
+          id?: string
+          is_patriarch?: boolean | null
+          last_name?: string
+          phone?: string | null
+          photo_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      relationships: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          person1_id: string | null
+          person2_id: string | null
+          relationship_type: Database["public"]["Enums"]["relationship_type"]
+          tree_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          person1_id?: string | null
+          person2_id?: string | null
+          relationship_type: Database["public"]["Enums"]["relationship_type"]
+          tree_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          person1_id?: string | null
+          person2_id?: string | null
+          relationship_type?: Database["public"]["Enums"]["relationship_type"]
+          tree_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relationships_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationships_person1_id_fkey"
+            columns: ["person1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationships_person2_id_fkey"
+            columns: ["person2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationships_tree_id_fkey"
+            columns: ["tree_id"]
+            isOneToOne: false
+            referencedRelation: "family_trees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +284,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      relationship_type:
+        | "parent"
+        | "child"
+        | "spouse"
+        | "sibling"
+        | "grandparent"
+        | "grandchild"
+        | "uncle"
+        | "aunt"
+        | "cousin"
+      request_status: "pending" | "approved" | "rejected"
+      user_role: "patriarch" | "spouse" | "child" | "grandchild" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +410,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      relationship_type: [
+        "parent",
+        "child",
+        "spouse",
+        "sibling",
+        "grandparent",
+        "grandchild",
+        "uncle",
+        "aunt",
+        "cousin",
+      ],
+      request_status: ["pending", "approved", "rejected"],
+      user_role: ["patriarch", "spouse", "child", "grandchild", "member"],
+    },
   },
 } as const

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import ProfilePhotoUpload from './ProfilePhotoUpload';
 
 interface RegistrationStep1Props {
   onNext: (data: any) => void;
@@ -14,7 +15,7 @@ interface RegistrationStep1Props {
 
 const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLogin }) => {
   const [formData, setFormData] = useState({
-    photo: null as File | null,
+    photoUrl: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -29,10 +30,8 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
     'Congo', 'Gabon', 'Tchad', 'République Centrafricaine', 'France', 'Canada', 'États-Unis'
   ];
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData({ ...formData, photo: e.target.files[0] });
-    }
+  const handlePhotoUploaded = (url: string) => {
+    setFormData({ ...formData, photoUrl: url });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -43,6 +42,12 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
   const handleFacebookLogin = () => {
     // TODO: Implement Facebook OAuth
     console.log('Facebook login clicked');
+  };
+
+  const getUserInitials = () => {
+    const firstInitial = formData.firstName.charAt(0).toUpperCase();
+    const lastInitial = formData.lastName.charAt(0).toUpperCase();
+    return `${firstInitial}${lastInitial}` || 'PR';
   };
 
   return (
@@ -70,14 +75,12 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
           <Separator className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="photo">Photo de profil</Label>
-              <Input
-                id="photo"
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="cursor-pointer"
+            <div className="flex justify-center">
+              <ProfilePhotoUpload
+                currentPhotoUrl={formData.photoUrl}
+                onPhotoUploaded={handlePhotoUploaded}
+                userInitials={getUserInitials()}
+                size="md"
               />
             </div>
 
