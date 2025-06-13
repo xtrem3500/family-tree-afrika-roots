@@ -181,11 +181,38 @@ export function useAuth() {
     }
   };
 
+  const deleteAllData = async () => {
+    try {
+      const { error } = await supabase.rpc('delete_all_users', { 
+        auth_code: 'GOGO-DELETE-CODE-2024' 
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Opération terminée",
+        description: "Toutes les données et utilisateurs ont été supprimés avec succès.",
+      });
+
+      // Déconnecter l'utilisateur actuel
+      await signOut();
+    } catch (error: any) {
+      console.error('Delete all error:', error);
+      toast({
+        title: "❌ Erreur de suppression",
+        description: error.message || "Une erreur est survenue lors de la suppression des données",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return {
     ...authState,
     signUp,
     signIn,
     signOut,
     updateProfile,
+    deleteAllData,
   };
 }
