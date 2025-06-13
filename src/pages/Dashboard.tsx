@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Users, TreePine, UserPlus, Settings } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-whatsapp-600"></div>

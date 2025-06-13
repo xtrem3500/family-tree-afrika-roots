@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -197,8 +196,8 @@ const FamilyTree: React.FC = () => {
                 <h2 className="text-2xl font-bold">
                   {selectedMember.first_name} {selectedMember.last_name}
                 </h2>
-                <Badge 
-                  variant={selectedMember.is_patriarch ? 'default' : 'secondary'} 
+                <Badge
+                  variant={selectedMember.is_patriarch ? 'default' : 'secondary'}
                   className="mt-2"
                 >
                   {selectedMember.is_patriarch ? 'Patriarche' : 'Membre'}

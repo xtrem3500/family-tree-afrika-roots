@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,8 +89,8 @@ const MembersPage: React.FC = () => {
                     {profile.country && (
                       <p className="text-sm text-gray-600 text-center">🌍 {profile.country}</p>
                     )}
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full mt-4"
                       onClick={() => window.location.href = `/profile/${profile.id}`}
                     >

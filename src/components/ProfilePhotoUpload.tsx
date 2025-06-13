@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, X } from 'lucide-react';
+import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { useStorage } from '@/hooks/use-storage';
+import { ImagePreviewDialog } from './ImagePreviewDialog';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string;
@@ -13,16 +14,20 @@ interface ProfilePhotoUploadProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
+export const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   currentPhotoUrl,
   onPhotoUploaded,
   userInitials,
   size = 'lg'
 }) => {
+  const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentPhotoUrl || null);
+  const [tempPreviewUrl, setTempPreviewUrl] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user, isAuthenticated } = useAuth();
-  const { isUploading, uploadImage } = useStorage();
+  const { user } = useAuth();
+  const { uploadImage } = useStorage();
 
   const sizeClasses = {
     sm: 'w-16 h-16',
@@ -30,34 +35,59 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     lg: 'w-32 h-32'
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Vérifier la taille du fichier (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "L'image ne doit pas dépasser 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifier le type de fichier
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Format non supporté",
+        description: "Veuillez sélectionner une image (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Créer un aperçu temporaire
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Image = event.target?.result as string;
+      setTempPreviewUrl(base64Image);
+      setIsPreviewOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!tempPreviewUrl) return;
+
     try {
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Image = event.target?.result as string;
-        setPreviewUrl(base64Image);
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      setPreviewUrl(tempPreviewUrl);
 
-      // Si l'utilisateur n'est pas authentifié (inscription), stocker temporairement en base64
-      if (!isAuthenticated || !user) {
-        const base64Image = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-        onPhotoUploaded(base64Image);
-        return;
+      // Si l'utilisateur est authentifié, uploader vers Supabase
+      if (user) {
+        const response = await fetch(tempPreviewUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
+        const publicUrl = await uploadImage(file, user.id);
+        setPreviewUrl(publicUrl);
+        onPhotoUploaded(publicUrl);
+      } else {
+        // Sinon, utiliser l'aperçu temporaire
+        onPhotoUploaded(tempPreviewUrl);
       }
-
-      // Upload to Supabase if authenticated
-      const publicUrl = await uploadImage(file, user.id);
-      setPreviewUrl(publicUrl);
-      onPhotoUploaded(publicUrl);
 
       toast({
         title: "Photo mise à jour",
@@ -70,69 +100,95 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
         description: error.message || "Impossible de télécharger la photo",
         variant: "destructive",
       });
+      // Réinitialiser l'aperçu en cas d'erreur
+      setPreviewUrl(currentPhotoUrl || null);
+    } finally {
+      setIsUploading(false);
+      setIsPreviewOpen(false);
+      setTempPreviewUrl(null);
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setTempPreviewUrl(null);
+    setIsPreviewOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const removePhoto = () => {
     setPreviewUrl(null);
     onPhotoUploaded('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <>
       <div className="relative group">
-        <Avatar className={`${sizeClasses[size]} cursor-pointer transition-all duration-300 hover:scale-105 ring-4 ring-whatsapp-200 hover:ring-whatsapp-400`}>
-          <AvatarImage
-            src={previewUrl || ''}
-            alt="Photo de profil"
-            className="object-cover"
-          />
-          <AvatarFallback className="bg-gradient-to-br from-whatsapp-400 to-emerald-500 text-white text-lg font-semibold">
-            {userInitials}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Overlay avec icône camera */}
-        <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Camera className="w-8 h-8 text-white" />
-        </div>
-
-        {/* Input file caché */}
         <input
           type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
           accept="image/*"
-          onChange={handleFileChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rounded-full"
-          disabled={isUploading}
+          className="hidden"
         />
 
-        {/* Bouton supprimer */}
-        {previewUrl && (
-          <Button
-            size="sm"
-            variant="destructive"
-            className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
-            onClick={removePhoto}
-          >
-            <X className="w-3 h-3" />
-          </Button>
-        )}
+        <div className={`relative ${sizeClasses[size]} rounded-full overflow-hidden border-2 border-gray-200 group-hover:border-blue-500 transition-all duration-300`}>
+          <Avatar className={`${sizeClasses[size]} cursor-pointer`}>
+            {previewUrl ? (
+              <AvatarImage
+                src={previewUrl}
+                alt="Photo de profil"
+                className="object-cover"
+              />
+            ) : (
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-700 text-white text-2xl">
+                {userInitials.toUpperCase()}
+              </AvatarFallback>
+            )}
+          </Avatar>
+
+          {isUploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-white hover:text-white hover:bg-white/20"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Camera className="w-5 h-5" />
+            </Button>
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-white hover:text-white hover:bg-white/20"
+                onClick={removePhoto}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {isUploading && (
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <Upload className="w-4 h-4 animate-pulse" />
-          <span>Upload en cours...</span>
-        </div>
-      )}
-
-      <p className="text-sm text-center text-muted-foreground">
-        Cliquez sur l'avatar pour changer votre photo de profil
-        <br />
-        <span className="text-xs">Formats acceptés : JPG, PNG (max 5MB)</span>
-      </p>
-    </div>
+      <ImagePreviewDialog
+        isOpen={isPreviewOpen}
+        onClose={handleCancelUpload}
+        onConfirm={handleConfirmUpload}
+        imageUrl={tempPreviewUrl}
+        isLoading={isUploading}
+      />
+    </>
   );
 };
-
-export { ProfilePhotoUpload };

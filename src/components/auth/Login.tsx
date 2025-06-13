@@ -1,20 +1,20 @@
-
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, Sparkles, Facebook } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signIn, isLoading, user } = useAuth();
+  const { signIn, loading, user } = useAuth();
+  const navigate = useNavigate();
 
   // Redirection si déjà connecté
   if (user) {
@@ -23,7 +23,13 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    try {
+      await signIn(email, password);
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      // L'erreur est déjà gérée dans le hook useAuth
+      console.error('Login error:', error);
+    }
   };
 
   const handleFacebookLogin = async () => {
@@ -101,16 +107,16 @@ const Login: React.FC = () => {
                 <Button
                   type="submit"
                   className="w-full bg-whatsapp-600 hover:bg-whatsapp-700 transition-all duration-300 hover:scale-105"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
-                  {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+                  {loading ? 'Connexion en cours...' : 'Se connecter'}
                 </Button>
               </form>
 
               <div className="text-center">
                 <Button
                   variant="link"
-                  onClick={() => window.location.href = '/register'}
+                  onClick={() => navigate('/register')}
                   className="text-sm text-primary hover:scale-105 transition-transform duration-300"
                 >
                   Pas encore inscrit ? Créer un compte

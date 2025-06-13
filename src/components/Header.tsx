@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Trash2, 
-  Sparkles, 
-  User, 
-  Users, 
-  LogOut, 
-  Settings, 
+import {
+  Trash2,
+  Sparkles,
+  User,
+  Users,
+  LogOut,
+  Settings,
   LayoutDashboard,
   MessageCircle,
   Bell,
@@ -40,15 +40,15 @@ const Header: React.FC = () => {
   const handleDeleteAll = async () => {
     if (deleteCode === '1432') {
       try {
-        const { error } = await supabase.rpc('delete_all_users', { 
-          auth_code: 'GOGO-DELETE-CODE-2024' 
+        const { error } = await supabase.rpc('delete_all_users', {
+          auth_code: 'GOGO-DELETE-CODE-2024'
         });
 
         if (error) throw error;
 
         setIsDeleteDialogOpen(false);
         setDeleteCode('');
-        
+
         toast({
           title: "✅ Opération terminée",
           description: "Toutes les données et utilisateurs ont été supprimés avec succès.",
@@ -104,7 +104,7 @@ const Header: React.FC = () => {
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-gold-400 rounded-full animate-pulse"></div>
           </div>
-          
+
           <div>
             <div className="flex items-center gap-2">
               <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90 transition-colors animate-fade-in">
@@ -127,7 +127,7 @@ const Header: React.FC = () => {
             >
               <MessageCircle className="w-4 h-4" />
             </Button>
-            
+
             <div className="relative">
               <Button
                 variant="ghost"
@@ -138,7 +138,7 @@ const Header: React.FC = () => {
               </Button>
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
             </div>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -146,7 +146,7 @@ const Header: React.FC = () => {
             >
               <Facebook className="w-4 h-4" />
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"

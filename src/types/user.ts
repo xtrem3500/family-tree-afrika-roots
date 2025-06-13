@@ -1,0 +1,40 @@
+export interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  photo_url?: string;
+  is_patriarch: boolean;
+  created_at: string;
+  updated_at: string;
+  user_metadata?: {
+    first_name?: string;
+    last_name?: string;
+    photo_url?: string;
+    is_patriarch?: boolean;
+  };
+}
+
+export type CustomUser = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  photo_url?: string | null;
+  is_patriarch: boolean;
+  role: 'member' | 'admin' | 'patriarch';
+  country?: string | null;
+  phone?: string | null;
+  birth_date?: string | null;
+  birth_place?: string | null;
+  current_location?: string | null;
+  title?: string | null;
+  relationship_type?: string | null;
+  father_id?: string | null;
+  mother_id?: string | null;
+  spouse_id?: string | null;
+  children_ids?: string[];
+  created_at: string;
+  updated_at: string;
+  user_metadata?: Record<string, any>;
+};

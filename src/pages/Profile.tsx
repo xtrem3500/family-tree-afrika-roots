@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';

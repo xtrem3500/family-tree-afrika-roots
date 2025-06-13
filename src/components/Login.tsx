@@ -1,129 +1,277 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import Header from './Header';
-import Footer from './Footer';
-import { Facebook, Mail, Lock, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Facebook, Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;
   onShowRegister: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onShowRegister }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onShowRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signIn, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
+    // Validation du format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "❌ Email invalide",
+        description: "Veuillez entrer une adresse email valide",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await signIn(email, password);
-    } catch (error) {
-      // L'erreur est déjà gérée dans le hook useAuth
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Email ou mot de passe incorrect');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Veuillez confirmer votre email avant de vous connecter');
+        }
+        throw error;
+      }
+
+      onLogin(email, password);
+    } catch (error: any) {
       console.error('Login error:', error);
+      toast({
+        title: "❌ Erreur de connexion",
+        description: error.message || "Une erreur est survenue lors de la connexion",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleFacebookLogin = () => {
-    // TODO: Implement Facebook OAuth
-    console.log('Facebook login clicked');
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "❌ Email manquant",
+        description: "Veuillez entrer votre adresse email",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation du format de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      toast({
+        title: "❌ Email invalide",
+        description: "Veuillez entrer une adresse email valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Email envoyé",
+        description: "Les instructions de réinitialisation ont été envoyées à votre adresse email",
+      });
+      setShowResetDialog(false);
+      setResetEmail('');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast({
+        title: "❌ Erreur",
+        description: error.message || "Une erreur est survenue lors de l'envoi de l'email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-whatsapp-50 via-emerald-50 to-teal-50">
-      <Header />
-
-      <main className="flex-1 flex items-center justify-center p-4 pt-24">
-        <div className="w-full max-w-md">
-          {/* Floating background elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-10 w-20 h-20 bg-whatsapp-200/30 rounded-full blur-xl animate-pulse"></div>
-            <div className="absolute top-40 right-10 w-32 h-32 bg-emerald-200/30 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute bottom-20 left-20 w-24 h-24 bg-teal-200/30 rounded-full blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-          </div>
-
-          <Card className="relative">
-            <CardHeader className="text-center space-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-whatsapp-400 to-whatsapp-600 rounded-full mx-auto flex items-center justify-center mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="space-y-1 bg-gradient-to-br from-blue-50 to-blue-100/50 border-b">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-2xl font-bold">Connexion</CardTitle>
+                <CardDescription>
+                  Connectez-vous à votre compte pour accéder à votre arbre généalogique
+                </CardDescription>
               </div>
-              <CardTitle className="text-2xl font-bold text-whatsapp-800">Familiale Tree</CardTitle>
-              <p className="text-sm text-muted-foreground">par Thierry Gogo</p>
-              <p className="text-sm text-center text-muted-foreground">
-                Connectez-vous à votre arbre familial
-              </p>
-            </CardHeader>
+              <div className="p-2 bg-blue-100 rounded-full">
+                <Sparkles className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardHeader>
 
-            <CardContent className="space-y-4">
-              <Button
-                onClick={handleFacebookLogin}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Facebook className="w-4 h-4 mr-2" />
-                Continuer avec Facebook
-              </Button>
-
-              <Separator className="my-4" />
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-9"
-                      required
-                    />
-                  </div>
+          <CardContent className="space-y-4 pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-9"
+                    required
+                    disabled={isLoading}
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
                   <Label htmlFor="password">Mot de passe</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-9"
-                      required
-                    />
-                  </div>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="px-0 text-sm text-blue-600 hover:text-blue-700"
+                    onClick={() => setShowResetDialog(true)}
+                    disabled={isLoading}
+                  >
+                    Mot de passe oublié ?
+                  </Button>
                 </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-whatsapp-600 hover:bg-whatsapp-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Connexion en cours...' : 'Se connecter'}
-                </Button>
-              </form>
-
-              <div className="text-center">
-                <button
-                  onClick={onShowRegister}
-                  className="text-sm text-primary hover:underline"
-                >
-                  Pas encore inscrit ? Créer un compte
-                </button>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-9"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
 
-      <Footer />
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connexion en cours...
+                  </>
+                ) : (
+                  'Se connecter'
+                )}
+              </Button>
+            </form>
+
+            <Separator className="my-4" />
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                // TODO: Implement Facebook OAuth
+                console.log('Facebook login clicked');
+              }}
+              disabled={isLoading}
+            >
+              <Facebook className="mr-2 h-4 w-4" />
+              Continuer avec Facebook
+            </Button>
+
+            <div className="text-center text-sm">
+              Pas encore de compte ?{' '}
+              <Button
+                type="button"
+                variant="link"
+                className="px-0 text-blue-600 hover:text-blue-700"
+                onClick={onShowRegister}
+                disabled={isLoading}
+              >
+                Créer un compte
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent
+          title="Réinitialisation du mot de passe"
+          description="Entrez votre adresse email pour recevoir les instructions de réinitialisation de votre mot de passe."
+        >
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                placeholder="votre@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                disabled={isResetting}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowResetDialog(false)}
+                disabled={isResetting}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  'Envoyer'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
