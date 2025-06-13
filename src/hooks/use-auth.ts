@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@supabase/supabase-js';
 
@@ -78,60 +79,35 @@ export function useAuth() {
     photoUrl?: string;
   }) => {
     try {
-      // 1. Créer l'utilisateur dans auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            phone: userData.phone,
+            photo_url: userData.photoUrl
+          }
+        }
       });
 
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error(authError.message);
-      }
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Erreur lors de la création du compte');
 
-      if (!authData.user) {
-        throw new Error('Erreur lors de la création du compte');
-      }
-
-      // 2. Vérifier si un profil existe déjà
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Check profile error:', checkError);
-        throw new Error('Erreur lors de la vérification du profil');
-      }
-
-      // 3. Créer le profil seulement s'il n'existe pas déjà
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              email: authData.user.email,
-              first_name: userData.firstName,
-              last_name: userData.lastName,
-              phone: userData.phone,
-              photo_url: userData.photoUrl,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Si la création du profil échoue, supprimer l'utilisateur auth
-          await supabase.auth.admin.deleteUser(authData.user.id);
-          throw new Error('Erreur lors de la création du profil');
-        }
-      }
+      toast({
+        title: "Inscription réussie",
+        description: "Votre compte a été créé avec succès!",
+      });
 
       return authData;
     } catch (error: any) {
       console.error('Signup error:', error);
+      toast({
+        title: "Erreur d'inscription",
+        description: error.message,
+        variant: "destructive",
+      });
       throw error;
     }
   };
@@ -205,57 +181,11 @@ export function useAuth() {
     }
   };
 
-  const deleteAllData = async () => {
-    try {
-      console.log('Tentative de suppression de toutes les données...');
-
-      // 1. Supprimer les données des tables
-      const { error: dataError } = await supabaseAdmin
-        .rpc('delete_all_data');
-
-      if (dataError) {
-        console.error('Erreur lors de la suppression des données:', dataError);
-        throw new Error('Erreur lors de la suppression des données');
-      }
-
-      // 2. Supprimer tous les utilisateurs via l'API admin
-      const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
-
-      if (usersError) {
-        console.error('Erreur lors de la récupération des utilisateurs:', usersError);
-        throw new Error('Erreur lors de la récupération des utilisateurs');
-      }
-
-      for (const user of users.users) {
-        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
-        if (deleteError) {
-          console.error(`Erreur lors de la suppression de l'utilisateur ${user.id}:`, deleteError);
-        }
-      }
-
-      console.log('Toutes les données et utilisateurs ont été supprimés avec succès');
-
-      toast({
-        title: "✅ Opération terminée",
-        description: "Toutes les données et utilisateurs ont été supprimés avec succès.",
-      });
-    } catch (error: any) {
-      console.error('Delete all error:', error);
-      toast({
-        title: "❌ Erreur de suppression",
-        description: error.message || "Une erreur est survenue lors de la suppression des données",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   return {
     ...authState,
     signUp,
     signIn,
     signOut,
     updateProfile,
-    deleteAllData,
   };
 }

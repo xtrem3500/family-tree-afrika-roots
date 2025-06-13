@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,23 +16,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header: React.FC = () => {
   const [deleteCode, setDeleteCode] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { user, signOut, deleteAllData } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleDeleteAll = async () => {
     if (deleteCode === '1432') {
       try {
-        await deleteAllData();
+        // Utiliser la fonction RPC sécurisée
+        const { error } = await supabase.rpc('delete_all_users', { 
+          auth_code: 'GOGO-DELETE-CODE-2024' 
+        });
+
+        if (error) throw error;
+
         setIsDeleteDialogOpen(false);
         setDeleteCode('');
-        navigate('/');
-      } catch (error) {
+        
+        toast({
+          title: "✅ Opération terminée",
+          description: "Toutes les données et utilisateurs ont été supprimés avec succès.",
+        });
+
+        // Rediriger vers la page de connexion
+        navigate('/login');
+      } catch (error: any) {
         console.error('Delete all error:', error);
+        toast({
+          title: "❌ Erreur de suppression",
+          description: error.message || "Une erreur est survenue lors de la suppression des données",
+          variant: "destructive",
+        });
       }
     } else {
       toast({
@@ -45,9 +65,7 @@ const Header: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
+      navigate('/login');
     } catch (error) {
       console.error('Sign out error:', error);
       toast({
@@ -77,7 +95,9 @@ const Header: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-white drop-shadow-lg">Arbre Familial</h1>
+              <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90">
+                Arbre Familial
+              </Link>
               <Sparkles className="w-5 h-5 text-gold-300 animate-pulse" />
             </div>
             <p className="text-sm text-white/80 font-medium">Par Thierry Gogo</p>
@@ -112,9 +132,21 @@ const Header: React.FC = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/" className="cursor-pointer">
+                  <Link to="/dashboard" className="cursor-pointer">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/tree" className="cursor-pointer">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    <span>Arbre Familial</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/members" className="flex items-center">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Mes membres</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -127,18 +159,6 @@ const Header: React.FC = () => {
                   <Link to="/settings" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Paramètres</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/members" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Mes membres</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/join" className="flex items-center">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    <span>Joindre un membre</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
