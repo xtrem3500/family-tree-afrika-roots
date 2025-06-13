@@ -70,7 +70,7 @@ export default {
 					200: '#bbf7d0',
 					300: '#86efac',
 					400: '#4ade80',
-					500: '#25D366',
+					500: '#22c55e',
 					600: '#16a34a',
 					700: '#15803d',
 					800: '#166534',
@@ -124,6 +124,31 @@ export default {
 					700: '#b45309',
 					800: '#92400e',
 					900: '#78350f'
+				},
+				// New colors for the modern design
+				earth: {
+					50: '#faf6f1',
+					100: '#f5e6d3',
+					200: '#e8d0b8',
+					300: '#d9ba9d',
+					400: '#c8a382',
+					500: '#b58d67',
+					600: '#a0774c',
+					700: '#8a6231',
+					800: '#744d16',
+					900: '#5e3700'
+				},
+				baobab: {
+					50: '#fdfcf9',
+					100: '#f5e6d3',
+					200: '#ead0a7',
+					300: '#deb97b',
+					400: '#d2a24f',
+					500: '#c68b23',
+					600: '#a97100',
+					700: '#8c5700',
+					800: '#6f3d00',
+					900: '#522300'
 				}
 			},
 			borderRadius: {
@@ -205,6 +230,9 @@ export default {
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+			},
+			boxShadow: {
+				'top': '0 -4px 6px -1px rgba(0, 0, 0, 0.1)',
 			}
 		}
 	},

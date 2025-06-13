@@ -6,7 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Sparkles, User, Users, UserPlus, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { 
+  Trash2, 
+  Sparkles, 
+  User, 
+  Users, 
+  LogOut, 
+  Settings, 
+  LayoutDashboard,
+  MessageCircle,
+  Bell,
+  Facebook,
+  Share2
+} from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -28,7 +40,6 @@ const Header: React.FC = () => {
   const handleDeleteAll = async () => {
     if (deleteCode === '1432') {
       try {
-        // Utiliser la fonction RPC sécurisée
         const { error } = await supabase.rpc('delete_all_users', { 
           auth_code: 'GOGO-DELETE-CODE-2024' 
         });
@@ -43,7 +54,6 @@ const Header: React.FC = () => {
           description: "Toutes les données et utilisateurs ont été supprimés avec succès.",
         });
 
-        // Rediriger vers la page de connexion
         navigate('/login');
       } catch (error: any) {
         console.error('Delete all error:', error);
@@ -86,16 +96,18 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-whatsapp-500 via-emerald-500 to-teal-500 backdrop-blur-xl border-b border-white/20 shadow-2xl">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        {/* Logo et titre */}
+        <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
+            <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
               <img src="/images/profile01.png" alt="Familiale Tree" className="h-8 w-8" />
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-gold-400 rounded-full animate-pulse"></div>
           </div>
+          
           <div>
-            <div className="flex items-center space-x-2">
-              <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90">
+            <div className="flex items-center gap-2">
+              <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90 transition-colors">
                 Arbre Familial
               </Link>
               <Sparkles className="w-5 h-5 text-gold-300 animate-pulse" />
@@ -104,75 +116,118 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Barre d'icônes sociales et menu utilisateur */}
+        <div className="flex items-center gap-4">
           {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10 border-2 border-white/20">
-                    <AvatarImage
-                      src={user.user_metadata?.photo_url}
-                      alt={getUserInitials()}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-gradient-to-br from-whatsapp-400 to-emerald-500 text-white">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user.user_metadata?.first_name} {user.user_metadata?.last_name}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard" className="cursor-pointer">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/tree" className="cursor-pointer">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    <span>Arbre Familial</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/members" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>Mes membres</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Mon Profil</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Paramètres</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            <>
+              {/* Icônes sociales */}
+              <div className="hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Se déconnecter</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <MessageCircle className="w-4 h-4" />
+                </Button>
+                
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
+                  >
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
+                >
+                  <Facebook className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Menu utilisateur */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10 border-2 border-white/20">
+                      <AvatarImage
+                        src={user.user_metadata?.photo_url}
+                        alt={getUserInitials()}
+                        className="object-cover"
+                      />
+                      <AvatarFallback className="bg-gradient-to-br from-whatsapp-400 to-emerald-500 text-white">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-white shadow-2xl" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {user.user_metadata?.first_name} {user.user_metadata?.last_name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/tree" className="cursor-pointer">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>Arbre Familial</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/members" className="flex items-center">
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Mes membres</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Mon Profil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Paramètres</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Se déconnecter</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
 
+          {/* Bouton Delete All */}
           <Button
             variant="destructive"
             size="sm"
@@ -183,8 +238,9 @@ const Header: React.FC = () => {
             🧨 Delete All
           </Button>
 
+          {/* Dialog de confirmation */}
           <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <DialogContent className="sm:max-w-md glass border-2 border-white/30">
+            <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/30">
               <DialogHeader>
                 <DialogTitle className="text-red-600 text-xl font-bold flex items-center">
                   <Trash2 className="w-6 h-6 mr-2" />

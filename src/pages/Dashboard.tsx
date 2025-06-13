@@ -27,7 +27,7 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-whatsapp-50 via-emerald-50 to-teal-50">
       <Header />
 
-      <main className="flex-1 pt-24 pb-8">
+      <main className="flex-1 pt-24 pb-32">
         <div className="container mx-auto p-4">
           <div className="space-y-8">
             <div className="text-center space-y-4">
