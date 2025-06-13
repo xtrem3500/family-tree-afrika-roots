@@ -99,7 +99,7 @@ const Header: React.FC = () => {
         {/* Logo et titre */}
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
+            <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg transition-all duration-300 hover:scale-110">
               <img src="/images/profile01.png" alt="Familiale Tree" className="h-8 w-8" />
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-gold-400 rounded-full animate-pulse"></div>
@@ -107,62 +107,62 @@ const Header: React.FC = () => {
           
           <div>
             <div className="flex items-center gap-2">
-              <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90 transition-colors">
+              <Link to="/dashboard" className="text-2xl font-bold text-white drop-shadow-lg hover:text-white/90 transition-colors animate-fade-in">
                 Arbre Familial
               </Link>
               <Sparkles className="w-5 h-5 text-gold-300 animate-pulse" />
             </div>
-            <p className="text-sm text-white/80 font-medium">Par Thierry Gogo</p>
+            <p className="text-sm text-white/80 font-medium animate-slide-in-right">Par Thierry Gogo</p>
           </div>
         </div>
 
         {/* Barre d'icônes sociales et menu utilisateur */}
         <div className="flex items-center gap-4">
+          {/* Icônes sociales - toujours visibles avec animations */}
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20 animate-fade-in">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300 hover:scale-110 hover:rotate-12"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </Button>
+            
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300 hover:scale-110"
+              >
+                <Bell className="w-4 h-4" />
+              </Button>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300 hover:scale-110 hover:rotate-12"
+            >
+              <Facebook className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300 hover:scale-110"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+          </div>
+
           {user && (
             <>
-              {/* Icônes sociales */}
-              <div className="hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </Button>
-                
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
-                  >
-                    <Bell className="w-4 h-4" />
-                  </Button>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
-                >
-                  <Facebook className="w-4 h-4" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 rounded-full hover:bg-white/20 text-white transition-all duration-300"
-                >
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </div>
-
               {/* Menu utilisateur */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-white/20">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full animate-bounce-in">
+                    <Avatar className="h-10 w-10 border-2 border-white/20 transition-all duration-300 hover:scale-110">
                       <AvatarImage
                         src={user.user_metadata?.photo_url}
                         alt={getUserInitials()}
@@ -174,7 +174,7 @@ const Header: React.FC = () => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-white shadow-2xl" align="end" forceMount>
+                <DropdownMenuContent className="w-56 bg-white shadow-2xl animate-scale-in" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
@@ -231,7 +231,7 @@ const Header: React.FC = () => {
           <Button
             variant="destructive"
             size="sm"
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0"
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 border-0 animate-pulse-slow"
             onClick={() => setIsDeleteDialogOpen(true)}
           >
             <Trash2 className="w-4 h-4 mr-2" />
@@ -240,7 +240,7 @@ const Header: React.FC = () => {
 
           {/* Dialog de confirmation */}
           <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/30">
+            <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/30 animate-scale-in">
               <DialogHeader>
                 <DialogTitle className="text-red-600 text-xl font-bold flex items-center">
                   <Trash2 className="w-6 h-6 mr-2" />
@@ -248,7 +248,7 @@ const Header: React.FC = () => {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-6">
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in">
                   <p className="text-sm text-red-800 font-medium">
                     ⚠️ <strong>Attention :</strong> Cette action supprimera définitivement toutes les données de l'arbre familial.
                   </p>
@@ -264,7 +264,7 @@ const Header: React.FC = () => {
                     placeholder="••••"
                     value={deleteCode}
                     onChange={(e) => setDeleteCode(e.target.value)}
-                    className="text-center text-lg font-mono border-2 focus:border-red-400 rounded-xl"
+                    className="text-center text-lg font-mono border-2 focus:border-red-400 rounded-xl transition-all duration-300 focus:scale-105"
                   />
                 </div>
 
@@ -272,14 +272,14 @@ const Header: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={() => setIsDeleteDialogOpen(false)}
-                    className="flex-1 border-2 hover:bg-gray-50 rounded-xl"
+                    className="flex-1 border-2 hover:bg-gray-50 rounded-xl transition-all duration-300 hover:scale-105"
                   >
                     Annuler
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={handleDeleteAll}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl shadow-lg"
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
                   >
                     Confirmer
                   </Button>

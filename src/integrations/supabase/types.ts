@@ -9,240 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      family_members: {
-        Row: {
-          id: string
-          joined_at: string | null
-          tree_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          id?: string
-          joined_at?: string | null
-          tree_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          id?: string
-          joined_at?: string | null
-          tree_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "family_members_tree_id_fkey"
-            columns: ["tree_id"]
-            isOneToOne: false
-            referencedRelation: "family_trees"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       family_trees: {
         Row: {
           created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          patriarch_id: string | null
+          id: number
+          patriarch_id: string
+          tree_name: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          patriarch_id?: string | null
+          id?: never
+          patriarch_id: string
+          tree_name: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          patriarch_id?: string | null
+          id?: never
+          patriarch_id?: string
+          tree_name?: string
           updated_at?: string | null
         }
         Relationships: []
       }
-      join_requests: {
-        Row: {
-          created_at: string | null
-          father_name: string | null
-          id: string
-          message: string | null
-          mother_name: string | null
-          proposed_related_member_id: string | null
-          related_member_search: string | null
-          requester_id: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: Database["public"]["Enums"]["request_status"] | null
-          tree_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          father_name?: string | null
-          id?: string
-          message?: string | null
-          mother_name?: string | null
-          proposed_related_member_id?: string | null
-          related_member_search?: string | null
-          requester_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["request_status"] | null
-          tree_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          father_name?: string | null
-          id?: string
-          message?: string | null
-          mother_name?: string | null
-          proposed_related_member_id?: string | null
-          related_member_search?: string | null
-          requester_id?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["request_status"] | null
-          tree_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "join_requests_tree_id_fkey"
-            columns: ["tree_id"]
-            isOneToOne: false
-            referencedRelation: "family_trees"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           birth_date: string | null
-          birth_place: string | null
           children_ids: string[] | null
-          country: string | null
-          created_at: string
-          current_location: string | null
-          email: string
           father_id: string | null
-          first_name: string
+          first_name: string | null
           id: string
           is_patriarch: boolean | null
-          last_name: string
+          last_name: string | null
           mother_id: string | null
-          phone: string | null
           photo_url: string | null
           relationship_type: string | null
-          role: string | null
           spouse_id: string | null
-          title: string | null
-          updated_at: string
         }
         Insert: {
           birth_date?: string | null
-          birth_place?: string | null
           children_ids?: string[] | null
-          country?: string | null
-          created_at?: string
-          current_location?: string | null
-          email: string
           father_id?: string | null
-          first_name: string
-          id: string
+          first_name?: string | null
+          id?: string
           is_patriarch?: boolean | null
-          last_name: string
+          last_name?: string | null
           mother_id?: string | null
-          phone?: string | null
           photo_url?: string | null
           relationship_type?: string | null
-          role?: string | null
           spouse_id?: string | null
-          title?: string | null
-          updated_at?: string
         }
         Update: {
           birth_date?: string | null
-          birth_place?: string | null
           children_ids?: string[] | null
-          country?: string | null
-          created_at?: string
-          current_location?: string | null
-          email?: string
           father_id?: string | null
-          first_name?: string
+          first_name?: string | null
           id?: string
           is_patriarch?: boolean | null
-          last_name?: string
+          last_name?: string | null
           mother_id?: string | null
-          phone?: string | null
           photo_url?: string | null
           relationship_type?: string | null
-          role?: string | null
           spouse_id?: string | null
-          title?: string | null
-          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_father_id_fkey"
-            columns: ["father_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_mother_id_fkey"
-            columns: ["mother_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_spouse_id_fkey"
-            columns: ["spouse_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      relationships: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          id: string
-          person1_id: string | null
-          person2_id: string | null
-          tree_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          person1_id?: string | null
-          person2_id?: string | null
-          tree_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          person1_id?: string | null
-          person2_id?: string | null
-          tree_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "relationships_tree_id_fkey"
-            columns: ["tree_id"]
-            isOneToOne: false
-            referencedRelation: "family_trees"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -259,7 +90,7 @@ export type Database = {
       }
     }
     Enums: {
-      request_status: "pending" | "approved" | "rejected"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -374,8 +205,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      request_status: ["pending", "approved", "rejected"],
-    },
+    Enums: {},
   },
 } as const
