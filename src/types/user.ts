@@ -1,21 +1,4 @@
-export interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  photo_url?: string;
-  is_patriarch: boolean;
-  created_at: string;
-  updated_at: string;
-  user_metadata?: {
-    first_name?: string;
-    last_name?: string;
-    photo_url?: string;
-    is_patriarch?: boolean;
-  };
-}
-
-export type CustomUser = {
+export type User = {
   id: string;
   email: string;
   first_name: string;
@@ -29,6 +12,7 @@ export type CustomUser = {
   birth_place?: string | null;
   current_location?: string | null;
   title?: string | null;
+  situation?: string | null;
   relationship_type?: string | null;
   father_id?: string | null;
   mother_id?: string | null;

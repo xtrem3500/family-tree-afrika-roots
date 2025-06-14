@@ -1,1 +1,31 @@
 project_id = "rrlixvlwsaeaugudwbiw"
+
+# Configuration de l'API
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+# Configuration CORS
+[cors]
+enabled = true
+origins = [
+  "http://localhost:8080",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://*.supabase.co"
+]
+methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+allowed_headers = ["*"]
+exposed_headers = ["*"]
+max_age = 3600
+credentials = true
+
+# Configuration de l'authentification
+[auth]
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:3000", "http://localhost:5173"]
+jwt_expiry = 3600
+enable_signup = true

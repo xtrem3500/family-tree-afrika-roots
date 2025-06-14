@@ -4,5 +4,15 @@
     "lib": ["deno.window"],
     "strict": true
   },
-  "importMap": "./import_map.json"
+  "importMap": "./import_map.json",
+  "lint": {
+    "files": {
+      "include": ["supabase/functions/"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["supabase/functions/"]
+    }
+  }
 }

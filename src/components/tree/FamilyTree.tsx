@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, UserPlus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { addCorsHeaders } from '@/integrations/supabase/middleware';
 
 interface FamilyMember {
   id: string;
@@ -25,33 +26,51 @@ interface FamilyMember {
 }
 
 const FamilyTree: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
 
   const { data: profiles, isLoading, error: profilesError } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Erreur lors de la récupération des profils:', error);
-        throw error;
+      if (!user) {
+        throw new Error('Utilisateur non authentifié');
       }
 
-      return data as FamilyMember[];
+      try {
+        const headers = new Headers();
+        addCorsHeaders(headers);
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Erreur Supabase:', error);
+          throw new Error(error.message);
+        }
+
+        if (!data) {
+          throw new Error('Aucune donnée reçue');
+        }
+
+        return data as FamilyMember[];
+      } catch (error: any) {
+        console.error('Erreur lors de la récupération des profils:', error);
+        throw new Error(error.message || 'Erreur lors de la récupération des profils');
+      }
     },
-    enabled: !!user
+    enabled: !!user && !authLoading,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const handleMemberClick = (member: FamilyMember) => {
     setSelectedMember(member);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-whatsapp-600" />
@@ -60,9 +79,17 @@ const FamilyTree: React.FC = () => {
   }
 
   if (profilesError) {
+    console.error('Erreur lors de la récupération des profils:', profilesError);
     return (
       <div className="text-center text-red-600 p-4">
-        Une erreur est survenue lors du chargement de l'arbre familial
+        <p className="mb-4">Une erreur est survenue lors du chargement de l'arbre familial.</p>
+        <Button
+          variant="outline"
+          onClick={() => window.location.reload()}
+          className="mt-2"
+        >
+          Réessayer
+        </Button>
       </div>
     );
   }
@@ -151,7 +178,7 @@ const FamilyTree: React.FC = () => {
                     }`}
                     onClick={() => handleMemberClick(member)}
                   >
-                    <div className="flex items-start space-x-4">
+                    <div className="flex items-center space-x-4">
                       <Avatar className="h-16 w-16 border-2 border-whatsapp-200">
                         <AvatarImage src={member.photo_url} alt={`${member.first_name} ${member.last_name}`} />
                         <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
@@ -205,7 +232,7 @@ const FamilyTree: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {selectedMember.title && (
                 <div>
                   <h3 className="font-semibold text-gray-700">Titre</h3>
@@ -246,21 +273,19 @@ const FamilyTree: React.FC = () => {
       )}
 
       {/* Bouton d'ajout */}
-      {user && (
-        <div className="text-center mt-8">
-          <Button
-            variant="outline"
-            className="flex items-center space-x-2 mx-auto"
-            onClick={() => toast({
-              title: "Fonctionnalité à venir",
-              description: "L'ajout de nouveaux membres sera bientôt disponible!",
-            })}
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Ajouter un membre</span>
-          </Button>
-        </div>
-      )}
+      <div className="text-center mt-8">
+        <Button
+          variant="outline"
+          className="flex items-center space-x-2 mx-auto"
+          onClick={() => toast({
+            title: "Fonctionnalité à venir",
+            description: "L'ajout de nouveaux membres sera bientôt disponible!",
+          })}
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Ajouter un membre</span>
+        </Button>
+      </div>
     </div>
   );
 };

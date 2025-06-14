@@ -9,53 +9,49 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import type { CustomUser } from '@/types/user';
 
 const Profile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     phone: '',
     country: '',
-    photoUrl: ''
+    photoUrl: '',
+    currentLocation: '',
+    situation: '',
+    birthDate: '',
+    birthPlace: '',
+    title: ''
   });
 
+  const countries = [
+    'Bénin', 'Burkina Faso', 'Cameroun', 'Côte d\'Ivoire', 'Ghana', 'Guinée',
+    'Mali', 'Niger', 'Nigeria', 'Sénégal', 'Togo', 'République Démocratique du Congo',
+    'Congo', 'Gabon', 'Tchad', 'République Centrafricaine', 'France', 'Canada', 'États-Unis'
+  ];
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-
-        setProfile(data);
-        setFormData({
-          firstName: data.first_name || '',
-          lastName: data.last_name || '',
-          phone: data.phone || '',
-          country: data.country || '',
-          photoUrl: data.photo_url || ''
-        });
-      } catch (error) {
-        console.error('Erreur lors de la récupération du profil:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger votre profil",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchProfile();
+    if (user) {
+      setFormData({
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        phone: user.phone || '',
+        country: user.country || '',
+        photoUrl: user.photo_url || '',
+        currentLocation: user.current_location || '',
+        situation: user.situation || '',
+        birthDate: user.birth_date || '',
+        birthPlace: user.birth_place || '',
+        title: user.title || ''
+      });
+    }
   }, [user]);
 
   const handlePhotoUploaded = (url: string) => {
@@ -67,20 +63,63 @@ const Profile: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await updateProfile({
+      // Mettre à jour le profil dans Supabase
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          country: formData.country,
+          photo_url: formData.photoUrl,
+          current_location: formData.currentLocation,
+          situation: formData.situation,
+          birth_date: formData.birthDate,
+          birth_place: formData.birthPlace,
+          title: formData.title,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user?.id);
+
+      if (profileError) throw profileError;
+
+      // Mettre à jour les métadonnées de l'utilisateur
+      const { error: userError } = await supabase.auth.updateUser({
+        data: {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          photo_url: formData.photoUrl,
+          current_location: formData.currentLocation,
+          situation: formData.situation,
+          birth_date: formData.birthDate,
+          birth_place: formData.birthPlace,
+          title: formData.title,
+        }
+      });
+
+      if (userError) throw userError;
+
+      // Mettre à jour l'utilisateur local
+      await updateUser({
         first_name: formData.firstName,
         last_name: formData.lastName,
         phone: formData.phone,
         country: formData.country,
         photo_url: formData.photoUrl,
-        updated_at: new Date().toISOString()
+        current_location: formData.currentLocation,
+        situation: formData.situation,
+        birth_date: formData.birthDate,
+        birth_place: formData.birthPlace,
+        title: formData.title,
       });
 
       toast({
         title: "Profil mis à jour",
         description: "Vos informations ont été mises à jour avec succès",
       });
+      setIsEditing(false);
     } catch (error: any) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Erreur",
         description: error.message,
@@ -106,19 +145,26 @@ const Profile: React.FC = () => {
       <main className="flex-1 pt-24 pb-32">
         <div className="container mx-auto p-4">
           <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center text-whatsapp-800">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-2xl font-bold text-whatsapp-800">
                 Mon Profil
               </CardTitle>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(!isEditing)}
+                className="text-whatsapp-600 hover:text-whatsapp-700"
+              >
+                {isEditing ? 'Annuler' : 'Modifier'}
+              </Button>
             </CardHeader>
 
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex justify-center">
                   <ProfilePhotoUpload
-                    currentPhotoUrl={formData.photoUrl}
+                    currentPhotoUrl={user.photo_url}
                     onPhotoUploaded={handlePhotoUploaded}
-                    userInitials={`${formData.firstName.charAt(0)}${formData.lastName.charAt(0)}`}
+                    userInitials={`${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`}
                     size="lg"
                   />
                 </div>
@@ -129,17 +175,20 @@ const Profile: React.FC = () => {
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
+                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      disabled={!isEditing}
+                      className={!isEditing ? 'bg-gray-100' : ''}
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Nom</Label>
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
+                      onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      disabled={!isEditing}
+                      className={!isEditing ? 'bg-gray-100' : ''}
                     />
                   </div>
                 </div>
@@ -150,35 +199,109 @@ const Profile: React.FC = () => {
                     id="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="country">Pays</Label>
-                  <Input
-                    id="country"
+                  <Select
                     value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    required
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+                    disabled={!isEditing}
+                  >
+                    <SelectTrigger className={!isEditing ? 'bg-gray-100' : ''}>
+                      <SelectValue placeholder="Sélectionnez votre pays" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">Date de naissance</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
                   />
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-whatsapp-600 to-emerald-600 hover:from-whatsapp-700 hover:to-emerald-700 text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Mise à jour...
-                    </div>
-                  ) : (
-                    "Mettre à jour mon profil"
-                  )}
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">Lieu de naissance</Label>
+                  <Input
+                    id="birthPlace"
+                    value={formData.birthPlace}
+                    onChange={(e) => setFormData(prev => ({ ...prev, birthPlace: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
+                    placeholder="Ex: Cotonou, Bénin"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currentLocation">Localisation actuelle</Label>
+                  <Input
+                    id="currentLocation"
+                    value={formData.currentLocation}
+                    onChange={(e) => setFormData(prev => ({ ...prev, currentLocation: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
+                    placeholder="Ex: Cotonou, Bénin"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="title">Titre/Fonction</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
+                    placeholder="Ex: Étudiant, Ingénieur..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="situation">Situation professionnelle</Label>
+                  <Input
+                    id="situation"
+                    value={formData.situation}
+                    onChange={(e) => setFormData(prev => ({ ...prev, situation: e.target.value }))}
+                    disabled={!isEditing}
+                    className={!isEditing ? 'bg-gray-100' : ''}
+                    placeholder="Ex: CADRE A LA RETRAITE, ancien douanier"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Indiquez votre situation actuelle ou votre dernier poste occupé
+                  </p>
+                </div>
+
+                {isEditing && (
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Mise à jour...
+                        </div>
+                      ) : (
+                        "Enregistrer les modifications"
+                      )}
+                    </Button>
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>

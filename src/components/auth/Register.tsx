@@ -14,6 +14,7 @@ import { Loader2, Sparkles, Facebook, UserPlus, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { addCorsHeaders, handleOptionsRequest } from '@/integrations/supabase/middleware';
 
 const ADMIN_SECRET_CODE = '1432';
 
@@ -24,23 +25,31 @@ export const Register = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFirstUser, setIsFirstUser] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
     firstName: '',
     lastName: '',
+    email: '',
+    password: '',
     phone: '',
-    photoUrl: '',
     country: '',
+    photoUrl: '',
+    birthDate: '',
+    birthPlace: '',
+    currentLocation: '',
+    title: '',
     role: 'member'
   });
   const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [pendingRole, setPendingRole] = useState<'member' | 'admin' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Redirection si déjà connecté
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   React.useEffect(() => {
     const checkFirstUser = async () => {
@@ -114,47 +123,25 @@ export const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    // Validation des champs obligatoires
-    const requiredFields = ['email', 'password', 'firstName', 'lastName'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-
-    if (missingFields.length > 0) {
-      toast({
-        title: "❌ Champs manquants",
-        description: `Veuillez remplir les champs suivants : ${missingFields.join(', ')}`,
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Validation du format de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast({
-        title: "❌ Email invalide",
-        description: "Veuillez entrer une adresse email valide",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Validation du mot de passe
-    if (formData.password.length < 6) {
-      toast({
-        title: "❌ Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
     try {
-      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+      // Vérifier si l'utilisateur existe déjà
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingUser) {
+        setError('Un compte existe déjà avec cet email');
+        setLoading(false);
+        return;
+      }
+
+      // Créer l'utilisateur
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -165,58 +152,63 @@ export const Register = () => {
             country: formData.country,
             phone: formData.phone,
             photo_url: formData.photoUrl,
+            birth_date: formData.birthDate,
+            birth_place: formData.birthPlace,
+            current_location: formData.currentLocation,
+            title: formData.title,
           },
         },
       });
 
-      if (signUpError) {
-        if (signUpError.message.includes('Database error saving new user')) {
-          throw new Error('Erreur lors de la création du compte. Veuillez vérifier vos informations et réessayer.');
+      if (authError) throw authError;
+
+      if (authData?.user) {
+        // Créer le profil
+        const headers = new Headers();
+        addCorsHeaders(headers);
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              role: formData.role,
+              country: formData.country,
+              phone: formData.phone,
+              photo_url: formData.photoUrl,
+              birth_date: formData.birthDate,
+              birth_place: formData.birthPlace,
+              current_location: formData.currentLocation,
+              title: formData.title,
+              is_patriarch: formData.role === 'patriarch',
+              created_at: new Date().toISOString()
+            }
+          ])
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error(`Erreur lors de la création du profil: ${profileError.message}`);
         }
-        throw signUpError;
+
+        toast({
+          title: "✅ Compte créé avec succès",
+          description: "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
+        });
+
+        // Rediriger vers la page de connexion
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
-
-      if (!user) {
-        throw new Error('Erreur lors de la création du compte. Veuillez réessayer.');
-      }
-
-      // Création du profil utilisateur
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: user.id,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            role: formData.role,
-            country: formData.country,
-            phone: formData.phone,
-            photo_url: formData.photoUrl,
-            is_patriarch: formData.role === 'patriarch',
-          },
-        ]);
-
-      if (profileError) {
-        // Si erreur lors de la création du profil, supprimer l'utilisateur
-        await supabase.auth.admin.deleteUser(user.id);
-        throw new Error('Erreur lors de la création du profil. Veuillez réessayer.');
-      }
-
-      toast({
-        title: "✅ Compte créé avec succès",
-        description: "Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.",
-      });
-
-      navigate('/login');
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      toast({
-        title: "❌ Erreur d'inscription",
-        description: error.message || "Une erreur est survenue lors de l'inscription",
-        variant: "destructive",
-      });
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Une erreur est survenue lors de l\'inscription');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
@@ -369,15 +361,59 @@ export const Register = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">Date de naissance</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthPlace">Lieu de naissance</Label>
+                  <Input
+                    id="birthPlace"
+                    value={formData.birthPlace}
+                    onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    placeholder="Ex: Cotonou, Bénin"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currentLocation">Localisation actuelle</Label>
+                  <Input
+                    id="currentLocation"
+                    value={formData.currentLocation}
+                    onChange={(e) => setFormData({ ...formData, currentLocation: e.target.value })}
+                    placeholder="Ex: Cotonou, Bénin"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="title">Titre/Fonction</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Ex: Étudiant, Ingénieur..."
+                    required
+                  />
+                </div>
               </CardContent>
 
               <CardFooter className="flex flex-col space-y-4">
                 <Button
                   type="submit"
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                  disabled={isSubmitting || authLoading}
+                  disabled={isSubmitting || authLoading || loading}
                 >
-                  {isSubmitting ? (
+                  {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Création du compte...

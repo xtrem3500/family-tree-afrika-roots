@@ -18,6 +18,7 @@ const supabaseConfig = {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storageKey: 'family-tree-auth',
+    flowType: 'pkce' as const,
     storage: {
       getItem: (key: string) => {
         try {
@@ -47,7 +48,8 @@ const supabaseConfig = {
     headers: {
       'x-application-name': import.meta.env.VITE_APP_NAME,
       'x-application-version': '1.0.0',
-      'Access-Control-Allow-Origin': 'http://localhost:8080'
+      'Access-Control-Allow-Origin': 'http://localhost:8080',
+      'Access-Control-Allow-Credentials': 'true'
     },
   },
   realtime: {
@@ -55,38 +57,16 @@ const supabaseConfig = {
       eventsPerSecond: 10,
     },
   },
+  db: {
+    schema: 'public' as const,
+  },
 };
 
-// Singleton pattern pour le client Supabase
-let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
-let supabaseAdminInstance: ReturnType<typeof createClient<Database>> | null = null;
+// Création d'une seule instance du client Supabase
+const supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, supabaseConfig);
 
-// Fonction pour obtenir l'instance unique du client Supabase
-export const getSupabaseClient = () => {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, supabaseConfig);
-  }
-  return supabaseInstance;
-};
-
-// Fonction pour obtenir l'instance unique du client admin Supabase
-export const getSupabaseAdminClient = () => {
-  if (!supabaseAdminInstance) {
-    supabaseAdminInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      ...supabaseConfig,
-      auth: {
-        ...supabaseConfig.auth,
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    });
-  }
-  return supabaseAdminInstance;
-};
-
-// Export des instances pour la rétrocompatibilité
-export const supabase = getSupabaseClient();
-export const supabaseAdmin = getSupabaseAdminClient();
+// Export de l'instance unique
+export const supabase = supabaseInstance;
 
 // Types d'erreurs personnalisés
 export class SupabaseError extends Error {

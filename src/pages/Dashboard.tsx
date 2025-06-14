@@ -1,14 +1,20 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth.tsx';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, TreePine, UserPlus, Settings } from 'lucide-react';
+import { Users, TreePine, UserPlus, Settings, Phone, MapPin } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const Dashboard: React.FC = () => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
 
   if (loading) {
     return (
@@ -34,12 +40,37 @@ const Dashboard: React.FC = () => {
                 Bienvenue dans votre Arbre Familial
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Gérez et explorez votre famille à travers les générations
+                Gérez et explorez votre famille à travers les générations autour du patriarche
               </p>
+              
+              {/* Section du patriarche */}
+              <div className="mt-8 flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <Avatar className="w-32 h-32 border-4 border-whatsapp-600 shadow-lg">
+                    <AvatarImage src={user.photo_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
+                    <AvatarFallback className="text-4xl bg-gradient-to-br from-whatsapp-600 to-emerald-600 text-white">
+                      {user.first_name?.[0]}{user.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  {user.is_patriarch && (
+                    <div className="absolute -top-2 -right-2 bg-whatsapp-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+                      Patriarche
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    {user.first_name} {user.last_name}
+                  </h2>
+                  <p className="text-gray-600">
+                    {user.is_patriarch ? 'Patriarche de la famille' : 'Membre de la famille'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/tree'}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleNavigation('/tree')}>
                 <CardHeader className="text-center">
                   <TreePine className="w-12 h-12 mx-auto text-whatsapp-600" />
                   <CardTitle>Arbre Familial</CardTitle>
@@ -51,7 +82,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/members'}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleNavigation('/members')}>
                 <CardHeader className="text-center">
                   <Users className="w-12 h-12 mx-auto text-emerald-600" />
                   <CardTitle>Membres</CardTitle>
@@ -75,22 +106,48 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/profile'}>
-                <CardHeader className="text-center">
-                  <Settings className="w-12 h-12 mx-auto text-gray-600" />
-                  <CardTitle>Profil</CardTitle>
+              <Card className="bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 cursor-pointer">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold text-whatsapp-800">
+                    Mon Profil
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 text-center">
-                    Gérez votre profil personnel
-                  </p>
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={user?.photo_url} />
+                      <AvatarFallback className="bg-whatsapp-100 text-whatsapp-800 text-xl">
+                        {user?.first_name?.[0]}{user?.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <p className="font-medium text-whatsapp-900">
+                        {user?.first_name} {user?.last_name}
+                      </p>
+                      <p className="text-sm text-whatsapp-600">
+                        {user?.email}
+                      </p>
+                      {user?.phone && (
+                        <p className="text-sm text-whatsapp-600 flex items-center gap-1">
+                          <Phone className="h-4 w-4" />
+                          {user.phone}
+                        </p>
+                      )}
+                      {user?.location && (
+                        <p className="text-sm text-whatsapp-600 flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {user.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             <div className="text-center">
               <Button
-                onClick={() => window.location.href = '/tree'}
+                onClick={() => handleNavigation('/tree')}
                 className="bg-gradient-to-r from-whatsapp-600 to-emerald-600 hover:from-whatsapp-700 hover:to-emerald-700 text-white px-8 py-3 text-lg"
               >
                 Explorer l'Arbre Familial

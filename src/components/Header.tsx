@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
@@ -40,11 +39,28 @@ const Header: React.FC = () => {
   const handleDeleteAll = async () => {
     if (deleteCode === '1432') {
       try {
-        const { error } = await supabase.rpc('delete_all_users', {
-          auth_code: 'GOGO-DELETE-CODE-2024'
+        if (!import.meta.env.VITE_ADMIN_PASSWORD) {
+          throw new Error('Configuration admin manquante');
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-all-users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            password: import.meta.env.VITE_ADMIN_PASSWORD
+          })
         });
 
-        if (error) throw error;
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        if (!response.ok) {
+          console.error('Error response:', data);
+          throw new Error(data.error || data.message || 'Erreur lors de la suppression des données');
+        }
 
         setIsDeleteDialogOpen(false);
         setDeleteCode('');
@@ -56,7 +72,11 @@ const Header: React.FC = () => {
 
         navigate('/login');
       } catch (error: any) {
-        console.error('Delete all error:', error);
+        console.error('Delete all error details:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response
+        });
         toast({
           title: "❌ Erreur de suppression",
           description: error.message || "Une erreur est survenue lors de la suppression des données",
@@ -240,7 +260,10 @@ const Header: React.FC = () => {
 
           {/* Dialog de confirmation */}
           <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/30 animate-scale-in">
+            <DialogContent
+              className="sm:max-w-md bg-white/95 backdrop-blur-xl border-2 border-white/30 animate-scale-in"
+              description="Confirmez la suppression de toutes les données en entrant le code de sécurité."
+            >
               <DialogHeader>
                 <DialogTitle className="text-red-600 text-xl font-bold flex items-center">
                   <Trash2 className="w-6 h-6 mr-2" />

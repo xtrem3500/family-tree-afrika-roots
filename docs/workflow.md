@@ -158,87 +158,43 @@
    - Vérification de la taille
    - Gestion des erreurs d'upload
    - Nettoyage des anciennes photos
-# Workflow de l'Application Familiale Tree
 
-// ... existing code ...
+## Inscription et Rôles
 
-## Problèmes Connus
-1. Gestion des photos de profil à améliorer
-   - **Problème**: Erreur 400 (Bad Request) lors de l'upload vers Supabase Storage
-   - **Cause**:
-     - Chemin de bucket incorrect (`avatars/avatars/` au lieu de `avatars/`)
-     - Politiques RLS potentiellement mal configurées
-     - Format de réponse incorrect (HTML au lieu de JSON)
-   - **Solution proposée**:
-     ```sql
-     -- 1. Vérifier et corriger les politiques RLS pour le bucket 'avatars'
-     CREATE POLICY "Avatar images are publicly accessible"
-     ON storage.objects FOR SELECT
-     USING (bucket_id = 'avatars');
+### Premier Utilisateur (Patriarche)
+- Le premier utilisateur qui s'inscrit dans l'application devient automatiquement le patriarche
+- Le patriarche est identifié par le champ `is_patriarch = true` dans la table `profiles`
+- Le patriarche a un rôle spécial `role = 'patriarch'`
+- Le patriarche est affiché au centre de l'arbre familial dans le Dashboard
+- Seul le patriarche peut voir la carte complète de l'arbre familial
 
-     CREATE POLICY "Users can upload avatar images"
-     ON storage.objects FOR INSERT
-     WITH CHECK (
-       bucket_id = 'avatars'
-       AND auth.role() = 'authenticated'
-     );
+### Membres Suivants
+- Tous les utilisateurs qui s'inscrivent après le patriarche sont des membres normaux
+- Les membres ont `is_patriarch = false` et `role = 'member'`
+- Les membres peuvent voir leur position dans l'arbre familial par rapport au patriarche
 
-     -- 2. Modifier le code d'upload pour utiliser le bon chemin
-     const filePath = `${user.id}/${fileName}`; // Au lieu de 'avatars/avatars/...'
-     ```
+## Arbre Familial
 
-2. Système d'invitation en cours de développement
-3. Visualisation de l'arbre à optimiser
-4. Gestion des relations familiales à implémenter
+### Affichage
+- L'arbre familial est centré sur le patriarche
+- Le patriarche est toujours affiché en haut au centre de l'arbre
+- Les autres membres sont positionnés en fonction de leur relation avec le patriarche
+- La carte de l'arbre familial n'est visible que pour le patriarche
 
-## Dernière Mise à Jour
-- Date: 2024-03-19
-- Version: 1.0.1
-- Dernières modifications:
-  - Implémentation du système de patriarche
-  - Ajout de l'interface de profil
-  - Mise en place du système d'invitation (UI)
-  - Intégration des icônes sociales
-  - Correction du problème d'upload des photos de profil (en cours)
+### Relations
+- Les relations familiales sont définies par les champs :
+  - `father_id`
+  - `mother_id`
+  - `spouse_id`
+  - `children_ids`
+- Ces relations déterminent la position des membres dans l'arbre
 
-## Notes Techniques
-### Configuration Supabase Storage
-1. **Structure des buckets**:
-   - Bucket principal: `avatars`
-   - Structure des fichiers: `{user_id}/{timestamp}.{extension}`
-   - Taille maximale: 5MB
-   - Types acceptés: image/jpeg, image/png, image/gif
+## Sécurité
+- Seul le patriarche peut voir la carte complète de l'arbre
+- Les autres membres ne peuvent voir que leur position relative
+- Les informations sensibles sont protégées par des règles d'accès appropriées
 
-2. **Politiques de sécurité**:
-   ```sql
-   -- Politiques RLS pour le bucket 'avatars'
-   -- Lecture publique
-   CREATE POLICY "Avatar images are publicly accessible"
-   ON storage.objects FOR SELECT
-   USING (bucket_id = 'avatars');
-
-   -- Upload authentifié
-   CREATE POLICY "Users can upload avatar images"
-   ON storage.objects FOR INSERT
-   WITH CHECK (
-     bucket_id = 'avatars'
-     AND auth.role() = 'authenticated'
-   );
-
-   -- Suppression par propriétaire
-   CREATE POLICY "Users can delete their own avatar images"
-   ON storage.objects FOR DELETE
-   USING (
-     bucket_id = 'avatars'
-     AND auth.role() = 'authenticated'
-     AND (storage.foldername(name))[1] = auth.uid()::text
-   );
-   ```
-
-3. **Gestion des erreurs**:
-   - Validation des types de fichiers
-   - Vérification de la taille
-   - Gestion des erreurs d'upload
-   - Nettoyage des anciennes photos
-
-// ... rest of existing code ...
+## Maintenance
+- Le statut de patriarche est permanent et ne peut pas être transféré
+- En cas de besoin, un administrateur peut modifier manuellement le statut dans la base de données
+- Les modifications du statut patriarche doivent être effectuées avec précaution pour maintenir l'intégrité de l'arbre
