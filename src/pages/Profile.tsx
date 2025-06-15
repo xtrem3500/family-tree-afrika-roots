@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth.tsx';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
+import ProfilePhotoUpload from '@/components/shared/ProfilePhotoUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

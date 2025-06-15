@@ -7,8 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Facebook, Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/features/auth/hooks/use-auth';
+import { supabase } from '@/lib/supabase/client';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => void;

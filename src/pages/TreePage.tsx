@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/use-auth.tsx';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import FamilyTree from '@/components/FamilyTree';

@@ -1,10 +1,18 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from './client';
 
 export const supabaseMiddleware = {
   async beforeRequest({ request }: { request: Request }) {
     const headers = new Headers(request.headers);
-    headers.set('Access-Control-Allow-Origin', 'http://localhost:8080');
-    headers.set('Access-Control-Allow-Credentials', 'true');
+
+    // Ajout des headers nécessaires pour Supabase
+    headers.set('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY);
+    headers.set('Authorization', `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`);
+    headers.set('Content-Type', 'application/json');
+    headers.set('Accept', 'application/json');
+    headers.set('Prefer', 'return=representation');
+
+    // Création d'une nouvelle requête avec les headers modifiés
     return new Request(request.url, {
       method: request.method,
       headers,
@@ -31,7 +39,7 @@ export const addCorsHeaders = (headers: Headers): Headers => {
   // En-têtes CORS de base
   headers.set('Access-Control-Allow-Origin', 'http://localhost:8080');
   headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, apikey, Prefer');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, apikey, Prefer, Accept');
   headers.set('Access-Control-Allow-Credentials', 'true');
   headers.set('Access-Control-Max-Age', '86400'); // 24 heures
 
@@ -42,9 +50,9 @@ export const addCorsHeaders = (headers: Headers): Headers => {
 export const handleOptionsRequest = (request: Request): Response => {
   const headers = new Headers();
   addCorsHeaders(headers);
-  
+
   return new Response(null, {
     status: 204,
     headers
   });
-}; 
+};

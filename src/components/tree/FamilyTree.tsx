@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/use-auth.tsx';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -38,9 +38,6 @@ const FamilyTree: React.FC = () => {
       }
 
       try {
-        const headers = new Headers();
-        addCorsHeaders(headers);
-
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -48,7 +45,7 @@ const FamilyTree: React.FC = () => {
 
         if (error) {
           console.error('Erreur Supabase:', error);
-          throw new Error(error.message);
+          throw error;
         }
 
         if (!data) {
@@ -58,7 +55,7 @@ const FamilyTree: React.FC = () => {
         return data as FamilyMember[];
       } catch (error: any) {
         console.error('Erreur lors de la récupération des profils:', error);
-        throw new Error(error.message || 'Erreur lors de la récupération des profils');
+        throw error;
       }
     },
     enabled: !!user && !authLoading,

@@ -1,47 +1,59 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
-export function useStorage() {
+export const useStorage = () => {
   const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
 
-  const uploadImage = async (file: File, userId: string, bucket: string = 'avatars') => {
+  const uploadImage = async (file: File, userId: string): Promise<string> => {
     try {
       setIsUploading(true);
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Veuillez sélectionner une image valide');
+      // Vérifier si le bucket existe
+      const { data: buckets, error: bucketsError } = await supabase
+        .storage
+        .listBuckets();
+
+      if (bucketsError) throw bucketsError;
+
+      // Créer le bucket s'il n'existe pas
+      if (!buckets.find(b => b.name === 'avatars')) {
+        const { error: createError } = await supabase
+          .storage
+          .createBucket('avatars', {
+            public: true,
+            fileSizeLimit: 5242880, // 5MB
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif']
+          });
+
+        if (createError) throw createError;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('L\'image ne doit pas dépasser 5MB');
-      }
-
-      // Create unique filename
+      // Générer un nom de fichier unique
+      const timestamp = new Date().getTime();
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `${userId === 'temp' ? 'temp' : userId}/${fileName}`;
+      const fileName = `${userId}/${timestamp}.${fileExt}`;
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
+      // Uploader le fichier
+      const { data, error: uploadError } = await supabase
+        .storage
+        .from('avatars')
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
+      // Obtenir l'URL publique
+      const { data: { publicUrl } } = supabase
+        .storage
+        .from('avatars')
+        .getPublicUrl(fileName);
 
       return publicUrl;
     } catch (error: any) {
+      console.error('Error uploading image:', error);
       toast({
         title: "Erreur d'upload",
         description: error.message,
@@ -71,8 +83,8 @@ export function useStorage() {
   };
 
   return {
-    isUploading,
     uploadImage,
+    isUploading,
     deleteImage,
   };
-}
+};

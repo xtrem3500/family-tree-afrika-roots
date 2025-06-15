@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, Sparkles, Facebook } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth.tsx';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 

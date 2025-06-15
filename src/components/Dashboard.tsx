@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 cursor-pointer" onClick={() => handleNavigation('/profile')}>
+              <Card className="bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-300 cursor-pointer" onClick={() => navigate('/profile')}>
                 <CardHeader>
                   <CardTitle className="text-xl font-semibold text-whatsapp-800">
                     Mon Profil

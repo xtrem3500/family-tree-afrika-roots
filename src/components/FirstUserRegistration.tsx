@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ProfilePhotoUpload } from '@/components/ProfilePhotoUpload';
-import { useAuth } from '@/hooks/use-auth.tsx';
+import ProfilePhotoUpload from '@/components/shared/ProfilePhotoUpload';
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 interface FirstUserRegistrationProps {
   onComplete: (data: any) => void;
@@ -40,10 +40,10 @@ export const FirstUserRegistration: React.FC<FirstUserRegistrationProps> = ({ on
     e.preventDefault();
     try {
       const { user } = await signUp(formData.email, formData.password, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         phone: formData.phone,
-        photoUrl: formData.photoUrl
+        photo_url: formData.photoUrl
       });
 
       if (!user) throw new Error('No user data returned');

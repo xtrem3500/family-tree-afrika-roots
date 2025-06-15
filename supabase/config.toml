@@ -12,13 +12,10 @@ max_rows = 1000
 [cors]
 enabled = true
 origins = [
-  "http://localhost:8080",
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "https://*.supabase.co"
+  "http://localhost:8080"
 ]
 methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-allowed_headers = ["*"]
+allowed_headers = ["authorization", "x-client-info", "apikey", "content-type"]
 exposed_headers = ["*"]
 max_age = 3600
 credentials = true

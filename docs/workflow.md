@@ -198,3 +198,97 @@
 - Le statut de patriarche est permanent et ne peut pas être transféré
 - En cas de besoin, un administrateur peut modifier manuellement le statut dans la base de données
 - Les modifications du statut patriarche doivent être effectuées avec précaution pour maintenir l'intégrité de l'arbre
+
+## Résolution des problèmes CORS avec Supabase
+
+### Problème rencontré
+- Erreur CORS lors des requêtes vers l'API Supabase depuis l'application React
+- Erreur "No 'Access-Control-Allow-Origin' header is present on the requested resource"
+- Conflit entre la configuration CORS de Supabase et les requêtes du client
+
+### Solution mise en place
+1. **Middleware Supabase**
+   - Création d'un middleware pour intercepter et modifier les requêtes
+   - Ajout automatique des headers nécessaires :
+     - `apikey`
+     - `Authorization`
+     - `Content-Type`
+     - `Prefer`
+
+2. **Client Supabase**
+   - Intégration du middleware dans la configuration du client
+   - Amélioration de la gestion du stockage local
+   - Ajout des headers d'autorisation globaux
+
+3. **Configuration Vite**
+   - Configuration CORS explicite pour le serveur de développement
+   - Autorisation des headers nécessaires
+   - Support des credentials pour les requêtes cross-origin
+
+### Configuration finale
+```typescript
+// middleware.ts
+export const supabaseMiddleware = {
+  async beforeRequest({ request }: { request: Request }) {
+    const headers = new Headers(request.headers);
+    headers.set('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY);
+    headers.set('Authorization', `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`);
+    headers.set('Content-Type', 'application/json');
+    headers.set('Prefer', 'return=minimal');
+    return new Request(request.url, {
+      method: request.method,
+      headers,
+      body: request.body,
+      credentials: 'include',
+    });
+  },
+};
+
+// vite.config.ts
+export default defineConfig({
+  server: {
+    cors: {
+      origin: ['http://localhost:8080'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'apikey', 'Prefer'],
+      credentials: true
+    }
+  }
+});
+```
+
+### Points importants à retenir
+1. Toujours inclure les headers d'autorisation nécessaires
+2. Configurer correctement CORS côté serveur de développement
+3. Utiliser un middleware pour gérer les requêtes de manière centralisée
+4. S'assurer que les variables d'environnement sont correctement chargées
+
+## Gestion de la déconnexion et nettoyage des données
+
+### Problème rencontré
+- Erreurs CORS lors de la déconnexion
+- Données persistantes non nettoyées correctement
+- Cookies et tokens restant après la déconnexion
+
+### Solution mise en place
+1. **Gestion robuste de la déconnexion**
+   - Fonction `handleLogout` pour une déconnexion normale
+   - Fonction `forceLogout` pour un nettoyage forcé en cas d'erreur
+   - Fonction `clearLocalData` pour le nettoyage des données locales
+
+2. **Nettoyage complet**
+   - Suppression des cookies Supabase
+   - Nettoyage du localStorage et sessionStorage
+   - Suppression des données de cache
+   - Réinitialisation des états de l'application
+
+3. **Gestion des erreurs**
+   - Détection des tokens expirés
+   - Gestion des erreurs d'authentification
+   - Nettoyage forcé en cas d'erreur
+
+### Points importants à retenir
+1. Toujours nettoyer les données locales avant la déconnexion
+2. Gérer les cas d'erreur avec un nettoyage forcé
+3. S'assurer que tous les types de stockage sont nettoyés
+4. Maintenir la cohérence des états de l'application
