@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,36 +30,36 @@ const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        if (!user) {
-          navigate('/login');
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) throw error;
-        setProfile(data);
-      } catch (error: any) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger votre profil",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+  const refreshProfile = useCallback(async () => {
+    try {
+      if (!user) {
+        navigate('/login');
+        return;
       }
-    };
 
-    fetchProfile();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger votre profil",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [user, navigate]);
+
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile]);
 
   const handleSignOut = async () => {
     try {
@@ -123,7 +123,23 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-center">
                   <ProfilePhotoUpload
                     currentPhotoUrl={profile.photo_url}
-                    onPhotoUploaded={(url) => setProfile({ ...profile, photo_url: url })}
+                    onPhotoUploaded={async (url) => {
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ photo_url: url })
+                        .eq('id', user.id);
+
+                      if (error) {
+                        toast({
+                          title: "Erreur",
+                          description: "Impossible de mettre à jour la photo",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      await refreshProfile();
+                    }}
                     userInitials={`${profile.first_name[0]}${profile.last_name[0]}`}
                     size="lg"
                   />

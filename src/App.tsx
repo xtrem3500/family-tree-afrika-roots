@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/features/auth/hooks/use-auth';
 import Login from '@/components/auth/Login';
 import Register from '@/components/auth/Register';
-import Dashboard from '@/components/Dashboard';
+import Dashboard from '@/pages/Index';
 import TreePage from '@/pages/TreePage';
 import MembersPage from '@/pages/MembersPage';
 import { useAuth } from '@/features/auth/hooks/use-auth';

@@ -30,13 +30,29 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setPreviewUrl(base64String);
-        onPhotoUploaded(base64String);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Vérifier la taille du fichier (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error('Le fichier est trop volumineux. Taille maximum : 5MB');
+        }
+
+        // Vérifier le type de fichier
+        if (!file.type.startsWith('image/')) {
+          throw new Error('Le fichier doit être une image');
+        }
+
+        // Créer une URL pour la prévisualisation
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          setPreviewUrl(base64String);
+          onPhotoUploaded(base64String);
+        };
+        reader.readAsDataURL(file);
+      } catch (error: any) {
+        console.error('Error selecting image:', error);
+        alert(error.message || 'Une erreur est survenue lors de la sélection de l\'image');
+      }
     }
   };
 

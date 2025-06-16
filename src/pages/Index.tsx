@@ -7,10 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, TreePine, UserPlus, Settings, Phone, MapPin } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/lib/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const Dashboard: React.FC = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  const { data: patriarch } = useQuery({
+    queryKey: ['patriarch'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_patriarch', true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -44,29 +60,27 @@ const Dashboard: React.FC = () => {
               </p>
 
               {/* Section du patriarche */}
-              <div className="mt-8 flex flex-col items-center space-y-4">
-                <div className="relative">
-                  <Avatar className="w-32 h-32 border-4 border-whatsapp-600 shadow-lg">
-                    <AvatarImage src={user.photo_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
-                    <AvatarFallback className="text-4xl bg-gradient-to-br from-whatsapp-600 to-emerald-600 text-white">
-                      {user.first_name?.[0]}{user.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  {user.is_patriarch && (
+              {patriarch && (
+                <div className="mt-4 flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <Avatar className="w-32 h-32 border-4 border-whatsapp-600 shadow-lg">
+                      <AvatarImage src={patriarch.photo_url || undefined} alt={`${patriarch.first_name} ${patriarch.last_name}`} />
+                      <AvatarFallback className="text-4xl bg-gradient-to-br from-whatsapp-600 to-emerald-600 text-white">
+                        {patriarch.first_name?.[0]}{patriarch.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="absolute -top-2 -right-2 bg-whatsapp-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
                       Patriarche
                     </div>
-                  )}
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-2xl font-semibold text-gray-800">
+                      {patriarch.first_name} {patriarch.last_name}
+                    </h2>
+                    <p className="text-gray-600">Patriarche de la famille</p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <h2 className="text-2xl font-semibold text-gray-800">
-                    {user.first_name} {user.last_name}
-                  </h2>
-                  <p className="text-gray-600">
-                    {user.is_patriarch ? 'Patriarche de la famille' : 'Membre de la famille'}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

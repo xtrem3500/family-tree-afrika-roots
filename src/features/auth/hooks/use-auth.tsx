@@ -342,37 +342,36 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   const updateUser = async (data: Partial<User>) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          first_name: data.first_name,
-          last_name: data.last_name,
-          photo_url: data.photo_url,
-          is_patriarch: data.is_patriarch,
-        },
-      });
-      if (error) throw error;
-
-      // Mettre à jour l'utilisateur local
-      if (user) {
-        setUser({
-          ...user,
-          ...data,
-          updated_at: new Date().toISOString(),
-        });
+      if (!user?.id) {
+        throw new Error("Utilisateur non connecté");
       }
 
-      toast({
-        title: "Profil mis à jour",
-        description: "Vos informations ont été mises à jour avec succès.",
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          metadata: data,
+          update_profile: true
+        })
       });
-    } catch (error: any) {
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Erreur lors de la mise à jour des métadonnées');
+      }
+
+      // Mettre à jour l'utilisateur local avec les données retournées
+      if (responseData.data?.user) {
+        setUser(responseData.data.user);
+      }
+    } catch (error) {
       console.error('Update user error:', error);
-      toast({
-        title: "Erreur de mise à jour",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw new Error(error.message || 'Erreur lors de la mise à jour du profil');
+      throw error;
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -12,11 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import type { CustomUser } from '@/types/user';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Camera } from 'lucide-react';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -30,6 +33,9 @@ const Profile: React.FC = () => {
     birthPlace: '',
     title: ''
   });
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const countries = [
     'Bénin', 'Burkina Faso', 'Cameroun', 'Côte d\'Ivoire', 'Ghana', 'Guinée',
@@ -38,79 +44,145 @@ const Profile: React.FC = () => {
   ];
 
   useEffect(() => {
-    if (user) {
-      setFormData({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        phone: user.phone || '',
-        country: user.country || '',
-        photoUrl: user.photo_url || '',
-        currentLocation: user.current_location || '',
-        situation: user.situation || '',
-        birthDate: user.birth_date || '',
-        birthPlace: user.birth_place || '',
-        title: user.title || ''
-      });
-    }
-  }, [user]);
+    const loadProfile = async () => {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        setFormData({
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          phone: data.phone || '',
+          country: data.country || '',
+          photoUrl: data.photo_url || '',
+          currentLocation: data.current_location || '',
+          situation: data.situation || '',
+          birthDate: data.birth_date || '',
+          birthPlace: data.birth_place || '',
+          title: data.title || ''
+        });
+      } catch (error: any) {
+        console.error('Error loading profile:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger votre profil",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [user, toast]);
 
   const handlePhotoUploaded = (url: string) => {
     setFormData(prev => ({ ...prev, photoUrl: url }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setShowPhotoModal(true);
+    }
+  };
+
+  const handleConfirmPhoto = async () => {
+    if (selectedFile) {
+      try {
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(`${Date.now()}-${selectedFile.name}`, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(uploadData.path);
+
+        setFormData(prev => ({ ...prev, photoUrl: publicUrl }));
+        setShowPhotoModal(false);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: "Erreur lors de l'upload de la photo",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleCancelPhoto = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setShowPhotoModal(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.id) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour mettre à jour votre profil",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Mettre à jour le profil dans Supabase
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          country: formData.country,
-          photo_url: formData.photoUrl,
-          current_location: formData.currentLocation,
-          situation: formData.situation,
-          birth_date: formData.birthDate,
-          birth_place: formData.birthPlace,
-          title: formData.title,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user?.id);
-
-      if (profileError) throw profileError;
-
-      // Mettre à jour les métadonnées de l'utilisateur
-      const { error: userError } = await supabase.auth.updateUser({
-        data: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          photo_url: formData.photoUrl,
-          current_location: formData.currentLocation,
-          situation: formData.situation,
-          birth_date: formData.birthDate,
-          birth_place: formData.birthPlace,
-          title: formData.title,
-        }
-      });
-
-      if (userError) throw userError;
-
-      // Mettre à jour l'utilisateur local
-      await updateUser({
+      const updateData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        phone: formData.phone,
-        country: formData.country,
-        photo_url: formData.photoUrl,
-        current_location: formData.currentLocation,
-        situation: formData.situation,
-        birth_date: formData.birthDate,
-        birth_place: formData.birthPlace,
-        title: formData.title,
+        phone: formData.phone || null,
+        country: formData.country || null,
+        photo_url: formData.photoUrl || null,
+        current_location: formData.currentLocation || null,
+        situation: formData.situation || null,
+        birth_date: formData.birthDate || null,
+        birth_place: formData.birthPlace || null,
+        title: formData.title || null,
+        updated_at: new Date().toISOString()
+      };
+
+      // Mettre à jour le profil via l'API Edge
+      await updateUser(updateData);
+
+      // Rafraîchir les données du profil depuis la base de données
+      const { data: refreshedData, error: refreshError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (refreshError) throw refreshError;
+
+      // Mettre à jour l'état local avec les données fraîches
+      setFormData({
+        firstName: refreshedData.first_name || '',
+        lastName: refreshedData.last_name || '',
+        phone: refreshedData.phone || '',
+        country: refreshedData.country || '',
+        photoUrl: refreshedData.photo_url || '',
+        currentLocation: refreshedData.current_location || '',
+        situation: refreshedData.situation || '',
+        birthDate: refreshedData.birth_date || '',
+        birthPlace: refreshedData.birth_place || '',
+        title: refreshedData.title || ''
       });
 
       toast({
@@ -122,7 +194,7 @@ const Profile: React.FC = () => {
       console.error('Error updating profile:', error);
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Une erreur est survenue lors de la mise à jour du profil",
         variant: "destructive",
       });
     } finally {
@@ -131,6 +203,14 @@ const Profile: React.FC = () => {
   };
 
   if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-whatsapp-600"></div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-whatsapp-600"></div>
@@ -161,12 +241,30 @@ const Profile: React.FC = () => {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="flex justify-center">
-                  <ProfilePhotoUpload
-                    currentPhotoUrl={user.photo_url}
-                    onPhotoUploaded={handlePhotoUploaded}
-                    userInitials={`${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`}
-                    size="lg"
-                  />
+                  <div className="relative">
+                    <Avatar className="h-32 w-32">
+                      <AvatarImage src={previewUrl || formData.photoUrl} />
+                      <AvatarFallback className="text-4xl">
+                        {formData.firstName?.[0]}{formData.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Input
+                      id="photo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      disabled={!isEditing}
+                    />
+                    <label
+                      htmlFor="photo"
+                      className={`absolute inset-0 flex items-center justify-center rounded-full transition-colors ${
+                        isEditing ? 'hover:bg-black/20 cursor-pointer' : 'opacity-0 cursor-not-allowed'
+                      }`}
+                    >
+                      <Camera className="h-8 w-8 text-white" />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -309,6 +407,34 @@ const Profile: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Modal de confirmation de la photo */}
+      <Dialog open={showPhotoModal} onOpenChange={setShowPhotoModal}>
+        <DialogContent className="sm:max-w-md" aria-describedby="photo-modal-description">
+          <DialogHeader>
+            <DialogTitle>Confirmer la photo de profil</DialogTitle>
+          </DialogHeader>
+          <div id="photo-modal-description" className="sr-only">
+            Prévisualisation de la photo de profil sélectionnée
+          </div>
+          <div className="flex justify-center py-4">
+            <Avatar className="h-32 w-32">
+              <AvatarImage src={previewUrl || ''} />
+              <AvatarFallback className="text-4xl">
+                {formData.firstName?.[0]}{formData.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <DialogFooter className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleCancelPhoto}>
+              Annuler
+            </Button>
+            <Button onClick={handleConfirmPhoto}>
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

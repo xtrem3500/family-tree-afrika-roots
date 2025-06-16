@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Facebook, Mail, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { Facebook, Mail, Lock, Sparkles, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { supabase } from '@/lib/supabase/client';
 
@@ -22,6 +22,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onShowRegister }) => {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,7 +170,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onShowRegister }) => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -177,6 +178,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onShowRegister }) => {
                     required
                     disabled={isLoading}
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="absolute right-3 top-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                 </div>
               </div>
 

@@ -8,9 +8,12 @@ import { Separator } from '@/components/ui/separator';
 import ProfilePhotoUpload from '@/components/shared/ProfilePhotoUpload';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, Lock, Unlock } from 'lucide-react';
+import { Loader2, Lock, Unlock, Camera, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useStorage } from '@/hooks/use-storage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from 'react-router-dom';
 
 interface RegistrationStep1Props {
   onNext: (data: any) => void;
@@ -31,29 +34,101 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
     birthDate: '',
     relationship_type: '',
     father_id: '',
-    mother_id: ''
+    mother_id: '',
+    isPatriarch: false
   });
   const { signUp, isLoading } = useAuth();
   const { uploadImage } = useStorage();
   const [isFirstUser, setIsFirstUser] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
   const [unlockedFields, setUnlockedFields] = useState({
     title: false,
     birthDate: false,
     birthPlace: false
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const checkFirstUser = async () => {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+    let isMounted = true;
 
-      if (!error) {
-        setIsFirstUser(count === 0);
+    const checkFirstUser = async () => {
+      try {
+        console.log('Checking for patriarch...');
+
+        // Requête directe à l'API REST de Supabase
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&is_patriarch=eq.true`,
+          {
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            }
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Direct API response:', data);
+
+        const hasPatriarch = Array.isArray(data) && data.length > 0;
+
+        if (isMounted) {
+          setIsFirstUser(!hasPatriarch);
+          setIsChecking(false);
+        }
+      } catch (error) {
+        console.error('Error in checkFirstUser:', error);
+        if (isMounted) {
+          setIsChecking(false);
+          toast({
+            title: "Erreur",
+            description: "Une erreur est survenue lors de la vérification. Veuillez réessayer.",
+            variant: "destructive",
+          });
+        }
       }
     };
+
     checkFirstUser();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Si nous sommes encore en train de vérifier, ne rien afficher
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-earth-50 to-baobab-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardContent className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-baobab-600" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Si isFirstUser est null après la vérification, afficher une erreur
+  if (isFirstUser === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-earth-50 to-baobab-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardContent className="text-center p-8">
+            <p className="text-red-600">Une erreur est survenue lors de la vérification du patriarche.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const countries = [
     'Bénin', 'Burkina Faso', 'Cameroun', 'Côte d\'Ivoire', 'Ghana', 'Guinée',
@@ -65,102 +140,149 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
     setFormData({ ...formData, photoUrl: url });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setShowPhotoModal(true);
+    }
+  };
+
+  const handleConfirmPhoto = () => {
+    setShowPhotoModal(false);
+  };
+
+  const handleCancelPhoto = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setShowPhotoModal(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     try {
-      // 1. Créer l'utilisateur dans auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            photo_url: formData.photoUrl,
-            is_patriarch: false, // Sera déterminé par le trigger
-            role: 'member', // Sera déterminé par le trigger
-            title: unlockedFields.title ? formData.title : null,
-            birth_place: unlockedFields.birthPlace ? formData.birthPlace : null,
-            birth_date: unlockedFields.birthDate ? formData.birthDate : null
-          }
-        }
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('No user data returned');
-
-      // Attendre que le trigger ait fini (1-2s)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 2. Si la photo est en base64, l'uploader vers Supabase
-      let finalPhotoUrl = formData.photoUrl;
-      /* Temporairement commenté pour garder l'ancienne méthode
-      if (formData.photoUrl.startsWith('data:image')) {
-        const response = await fetch(formData.photoUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
-        finalPhotoUrl = await uploadImage(file, authData.user.id);
-      }
-      */
-
-      // 3. Mettre à jour le profil avec les informations supplémentaires
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          photo_url: finalPhotoUrl,
-          country: formData.country,
-          title: unlockedFields.title ? formData.title : null,
-          birth_place: unlockedFields.birthPlace ? formData.birthPlace : null,
-          birth_date: unlockedFields.birthDate ? formData.birthDate : null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-        throw profileError;
+      // Vérifier si une photo a été sélectionnée
+      if (!selectedFile) {
+        toast({
+          title: "Photo requise",
+          description: "Veuillez sélectionner une photo de profil",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Récupérer le profil final
-      const { data: profile, error: fetchError } = await supabase
+      // Vérifier la taille du fichier (max 5MB)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop volumineux",
+          description: "La taille maximale autorisée est de 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Vérifier si l'email existe déjà
+      const { data: existingUser, error: emailCheckError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
+        .select('email')
+        .eq('email', formData.email)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (existingUser) {
+        toast({
+          title: "Email déjà utilisé",
+          description: "Cette adresse email est déjà associée à un compte",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Afficher le message de succès
+      // Upload de la photo avec des options optimisées
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(`${Date.now()}-${selectedFile.name}`, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: selectedFile.type,
+          duplex: 'half'
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Obtenir l'URL publique de la photo
+      const { data: { publicUrl: finalPhotoUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(uploadData.path);
+
+      // Préparer les données d'inscription
+      const registrationData = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone || null,
+        photo_url: finalPhotoUrl,
+        country: formData.country || null,
+        title: formData.title || null,
+        birth_place: formData.birthPlace || null,
+        birth_date: formData.birthDate || null,
+        is_patriarch: isFirstUser,
+        relationship_type: formData.relationship_type || null,
+        father_id: formData.father_id || null,
+        mother_id: formData.mother_id || null
+      };
+
+      // Appeler notre fonction Edge pour l'inscription
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify(registrationData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de l\'inscription');
+      }
+
+      const responseData = await response.json();
+
+      // Connexion automatique après l'inscription
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
       toast({
-        title: "Inscription réussie !",
-        description: profile.is_patriarch
-          ? "Vous êtes maintenant le patriarche de votre arbre familial."
-          : "Bienvenue dans l'arbre familial !",
-        variant: "default",
+        title: "Inscription réussie",
+        description: "Votre compte a été créé avec succès",
       });
 
-      onNext({
-        id: profile.id,
-        email: profile.email,
-        firstName: profile.first_name,
-        lastName: profile.last_name,
-        phone: profile.phone,
-        photoUrl: profile.photo_url,
-        country: profile.country,
-        is_patriarch: profile.is_patriarch,
-        role: profile.role,
-        title: profile.title,
-        birthPlace: profile.birth_place,
-        birthDate: profile.birth_date
-      });
+      // Rediriger vers le dashboard
+      navigate('/dashboard');
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
         title: "Erreur d'inscription",
-        description: error.message,
+        description: error.message || "Une erreur est survenue lors de l'inscription",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -209,13 +331,34 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
           <Separator className="my-4" />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-center">
-              <ProfilePhotoUpload
-                currentPhotoUrl={formData.photoUrl}
-                onPhotoUploaded={handlePhotoUploaded}
-                userInitials={getUserInitials()}
-                size="md"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="photo">Photo de profil</Label>
+              <div className="flex justify-center">
+                <div className="relative">
+                  <Avatar className="h-32 w-32">
+                    <AvatarImage src={previewUrl || formData.photoUrl} />
+                    <AvatarFallback className="text-4xl">
+                      {formData.firstName?.[0]}{formData.lastName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="photo"
+                    className="absolute inset-0 flex items-center justify-center rounded-full transition-all duration-300 hover:bg-whatsapp-600/20 cursor-pointer group"
+                  >
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-whatsapp-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+                      <Camera className="h-8 w-8 text-whatsapp-600 group-hover:text-whatsapp-700 transition-all duration-300 group-hover:scale-110" />
+                    </div>
+                  </label>
+                </div>
+              </div>
             </div>
 
             {/* Champs obligatoires */}
@@ -253,13 +396,24 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
 
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
+              <div className="relative">
               <Input
                 id="password"
-                type="password"
+                  type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="pl-9"
                 required
               />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
 
             {/* Champs spécifiques au patriarche */}
@@ -421,9 +575,9 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-all duration-200"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <div className="flex items-center justify-center">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {isFirstUser ? "Création du patriarche..." : "Création du compte..."}
@@ -444,6 +598,31 @@ const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onNext, onShowLog
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de confirmation de la photo */}
+      <Dialog open={showPhotoModal} onOpenChange={setShowPhotoModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer la photo de profil</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            <Avatar className="h-32 w-32">
+              <AvatarImage src={previewUrl || ''} />
+              <AvatarFallback className="text-4xl">
+                {formData.firstName?.[0]}{formData.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <DialogFooter className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleCancelPhoto}>
+              Annuler
+            </Button>
+            <Button onClick={handleConfirmPhoto}>
+              Confirmer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -22,3 +22,20 @@ export type User = {
   updated_at: string;
   user_metadata?: Record<string, any>;
 };
+
+export interface CustomUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  photo_url: string;
+  country: string;
+  is_patriarch: boolean;
+  role: string;
+  title: string | null;
+  birth_place: string | null;
+  birth_date: string | null;
+  current_location?: string | null;
+  situation?: string | null;
+}

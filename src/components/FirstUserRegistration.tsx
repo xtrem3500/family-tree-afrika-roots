@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { toast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface FirstUserRegistrationProps {
   onComplete: (data: any) => void;
@@ -25,6 +26,7 @@ export const FirstUserRegistration: React.FC<FirstUserRegistrationProps> = ({ on
     password: ''
   });
   const { signUp, isLoading } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const countries = [
     'Bénin', 'Burkina Faso', 'Cameroun', 'Côte d\'Ivoire', 'Ghana', 'Guinée',
@@ -168,13 +170,24 @@ export const FirstUserRegistration: React.FC<FirstUserRegistrationProps> = ({ on
 
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="pl-9"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-3 top-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
 
             <Button
